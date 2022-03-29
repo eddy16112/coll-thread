@@ -7,11 +7,13 @@
 #include <string.h>
 
 #define NTHREADS 16
-#define SEND_COUNT 80
+#define SEND_COUNT 40
+#define MPI_DTYPE MPI_INT
+typedef int DTYPE;
 
-#define ALLTOALL_USE_SENDRECV
+#define ALLTOALL_USE_SENDRECV_OLD
 
-//#define DEBUG_PRINT
+#define DEBUG_PRINT
 
 typedef struct thread_args_s {
   int mpi_comm_size;
@@ -52,8 +54,8 @@ int MPI_Alltoall_thread(void *sendbuf, int sendcount, MPI_Datatype sendtype,
   MPI_Aint lb, sendtype_extent, recvtype_extent;
   MPI_Type_get_extent(sendtype, &lb, &sendtype_extent);
   MPI_Type_get_extent(recvtype, &lb, &recvtype_extent);
-  assert(recvtype_extent == 4);
-  assert(sendtype_extent == 4);
+  // assert(recvtype_extent == 4);
+  // assert(sendtype_extent == 4);
  
   int global_rank = global_comm.mpi_rank * global_comm.nb_threads + global_comm.tid;
 
@@ -61,6 +63,8 @@ int MPI_Alltoall_thread(void *sendbuf, int sendcount, MPI_Datatype sendtype,
   if (sendbuf == MPI_IN_PLACE) {
     sendbuf_tmp = (void *)malloc(total_size * recvtype_extent * recvcount);
     memcpy(sendbuf_tmp, recvbuf, total_size * recvtype_extent * recvcount);
+    int * sendval = (int*)sendbuf_tmp;
+    printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
   } else {
     sendbuf_tmp = sendbuf;
   }
@@ -94,8 +98,8 @@ int MPI_Alltoall_thread(void *sendbuf, int sendcount, MPI_Datatype sendtype,
     int send_tag = i * 10000 + global_rank; // which seg it sends to
     int recv_tag = global_rank * 10000 + i; // idx of current seg
 #ifdef DEBUG_PRINT
-    printf("global_rank %d, rank %d, tid %d, send %d to %d, send_tag %d, recv %d from %d, recv_tag %d\n", 
-      global_rank, global_comm.mpi_rank, global_comm.tid, i, dest_mpi_rank, send_tag, i, dest_mpi_rank, recv_tag);
+    printf("i: %d === global_rank %d, rank %d, tid %d, send %d to %d, send_tag %d, recv %d from %d, recv_tag %d\n", 
+      i, global_rank, global_comm.mpi_rank, global_comm.tid, i, dest_mpi_rank, send_tag, i, dest_mpi_rank, recv_tag);
 #endif
     res = MPI_Sendrecv(src, sendcount, sendtype, dest_mpi_rank, send_tag, dst, recvcount, recvtype, dest_mpi_rank, recv_tag, global_comm.comm, &status);
     assert(res == MPI_SUCCESS);
@@ -110,8 +114,8 @@ int MPI_Alltoall_thread(void *sendbuf, int sendcount, MPI_Datatype sendtype,
     res = MPI_Send(src, sendcount, sendtype, dest_mpi_rank, tag, global_comm.comm);
     assert(res == MPI_SUCCESS);
 #ifdef DEBUG_PRINT
-    printf("global_rank %d, rank %d, tid %d, send %d to %d, send_tag %d\n", 
-      global_rank, global_comm.mpi_rank, global_comm.tid, i, dest_mpi_rank, tag);
+    printf("i: %d === global_rank %d, rank %d, tid %d, send %d to %d, send_tag %d\n", 
+      i, global_rank, global_comm.mpi_rank, global_comm.tid, i, dest_mpi_rank, tag);
 #endif
 	}
   
@@ -120,8 +124,8 @@ int MPI_Alltoall_thread(void *sendbuf, int sendcount, MPI_Datatype sendtype,
     int dest_mpi_rank = i / global_comm.nb_threads;
     tag = global_rank * 10000 + i;
 #ifdef DEBUG_PRINT
-    printf("global_rank %d, rank %d, tid %d, recv %d from %d, recv_tag %d\n", 
-      global_rank, global_comm.mpi_rank, global_comm.tid, i, dest_mpi_rank, tag);
+    printf("i: %d === global_rank %d, rank %d, tid %d, recv %d from %d, recv_tag %d\n", 
+      i, global_rank, global_comm.mpi_rank, global_comm.tid, i, dest_mpi_rank, tag);
 #endif
     res = MPI_Recv(dst, recvcount, recvtype, dest_mpi_rank, tag, global_comm.comm, &status);
     assert(res == MPI_SUCCESS);
@@ -154,7 +158,6 @@ int main( int argc, char *argv[] )
 {
   int mpi_rank;//iam
   int mpi_comm_size;//np
-  int *a, *b;
   MPI_Comm  mpi_comm;  
   int provided;
  
@@ -165,20 +168,21 @@ int main( int argc, char *argv[] )
 
   size_t N = mpi_comm_size * SEND_COUNT * NTHREADS;
 
-  int **send_buffs, **recv_buffs;
+  DTYPE **send_buffs, **recv_buffs;
+  DTYPE *a, *b;
 
-  send_buffs = (int**)malloc(sizeof(int*) * NTHREADS);
-  recv_buffs = (int**)malloc(sizeof(int*) * NTHREADS);
+  send_buffs = (DTYPE**)malloc(sizeof(DTYPE*) * NTHREADS);
+  recv_buffs = (DTYPE**)malloc(sizeof(DTYPE*) * NTHREADS);
 
   for (int i = 0; i < NTHREADS; i++) {
-    a = (int *)malloc(N*sizeof(int));
-	  b = (int *)malloc(N*sizeof(int));
+    a = (DTYPE *)malloc(N*sizeof(DTYPE));
+	  b = (DTYPE *)malloc(N*sizeof(DTYPE));
  
     printf("N %ld, rank=%d, tid %d, a=", N, mpi_rank, i);
     for(int i = 0; i < N; i++)
     {
-      a[i] = i;
-      b[i] = i;
+      a[i] = (DTYPE)i;
+      b[i] = (DTYPE)i;
       //printf(" %d", a[i]);		
     }		
     printf("\n");
@@ -199,8 +203,8 @@ int main( int argc, char *argv[] )
     args[i].nb_threads = NTHREADS;
     args[i].comm = mpi_comm;
     args[i].sendbuf = send_buffs[i];
-    //args[i].sendbuf = MPI_IN_PLACE;
-    args[i].sendcount = SEND_COUNT;
+    args[i].sendbuf = MPI_IN_PLACE;
+    //args[i].sendcount = SEND_COUNT;
     args[i].sendtype = MPI_INT;
     args[i].recvbuf = recv_buffs[i];
     args[i].recvcount = SEND_COUNT;
@@ -223,15 +227,15 @@ int main( int argc, char *argv[] )
     // printf("rank=%d, tid %d, b=", mpi_rank, i);
     // for(int i = 0; i < N; i++)
     // {
-    //   printf(" %d", b[i]);		
+    //   printf(" %d", (int)b[i]);		
     // }
     // printf("\n");
     
     int start_value = global_rank * SEND_COUNT;
     for (int i = 0; i < N; i += SEND_COUNT) {
       for (int j = 0; j < SEND_COUNT; j++) {
-        if (b[i+j] != start_value + j) {
-          printf("i %d j %d, val %d\n", i, j, b[i+j]);
+        if (b[i+j] != (DTYPE)start_value + j) {
+          printf("i %d j %d, val %d\n", i, j, (int)b[i+j]);
           assert(0);
         }
       }
