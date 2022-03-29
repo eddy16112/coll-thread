@@ -7,13 +7,13 @@
 #include <string.h>
 
 #define NTHREADS 16
-#define SEND_COUNT 40
+#define SEND_COUNT 80
 #define MPI_DTYPE MPI_INT
 typedef int DTYPE;
 
-#define ALLTOALL_USE_SENDRECV_OLD
+#define ALLTOALL_USE_SENDRECV
 
-#define DEBUG_PRINT
+//#define DEBUG_PRINT
 
 typedef struct thread_args_s {
   int mpi_comm_size;
@@ -63,8 +63,8 @@ int MPI_Alltoall_thread(void *sendbuf, int sendcount, MPI_Datatype sendtype,
   if (sendbuf == MPI_IN_PLACE) {
     sendbuf_tmp = (void *)malloc(total_size * recvtype_extent * recvcount);
     memcpy(sendbuf_tmp, recvbuf, total_size * recvtype_extent * recvcount);
-    int * sendval = (int*)sendbuf_tmp;
-    printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
+    // int * sendval = (int*)sendbuf_tmp;
+    // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
   } else {
     sendbuf_tmp = sendbuf;
   }
@@ -131,6 +131,10 @@ int MPI_Alltoall_thread(void *sendbuf, int sendcount, MPI_Datatype sendtype,
     assert(res == MPI_SUCCESS);
 	}
 #endif
+
+  if (sendbuf == MPI_IN_PLACE) {
+    free(sendbuf_tmp);
+  }
 
   return 0;
 }
@@ -203,12 +207,12 @@ int main( int argc, char *argv[] )
     args[i].nb_threads = NTHREADS;
     args[i].comm = mpi_comm;
     args[i].sendbuf = send_buffs[i];
-    args[i].sendbuf = MPI_IN_PLACE;
-    //args[i].sendcount = SEND_COUNT;
-    args[i].sendtype = MPI_INT;
+    //args[i].sendbuf = MPI_IN_PLACE;
+    args[i].sendcount = SEND_COUNT;
+    args[i].sendtype = MPI_DTYPE;
     args[i].recvbuf = recv_buffs[i];
     args[i].recvcount = SEND_COUNT;
-    args[i].recvtype = MPI_INT;
+    args[i].recvtype = MPI_DTYPE;
     pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
   }
 
