@@ -75,8 +75,8 @@ int MPI_Alltoall_thread(void *sendbuf, int sendcount, MPI_Datatype sendtype,
     sendto_mpi_rank = sendto_global_rank / global_comm.nb_threads;
     recvfrom_mpi_rank = recvfrom_global_rank / global_comm.nb_threads;
     // tag: seg idx + rank_idx
-    int send_tag = sendto_global_rank * 10000 + global_rank; // which seg it sends to
-    int recv_tag = global_rank * 10000 + recvfrom_global_rank; // idx of current seg
+    int send_tag = sendto_global_rank * 10000 + global_rank; // which dst seg it sends to (in dst rank)
+    int recv_tag = global_rank * 10000 + recvfrom_global_rank; // idx of current seg we are receving (in src/my rank)
 #ifdef DEBUG_PRINT
     printf("i: %d === global_rank %d, rank %d, tid %d, send %d to %d, send_tag %d, recv %d from %d, recv_tag %d\n", 
       i, global_rank, global_comm.mpi_rank, global_comm.tid, 
