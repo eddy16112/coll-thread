@@ -183,12 +183,19 @@ int main( int argc, char *argv[] )
 	  b = (DTYPE *)malloc(N*sizeof(DTYPE));
  
     printf("N %ld, rank=%d, tid %d, a=", N, mpi_rank, i);
-    for(int i = 0; i < N; i++)
+    for(int j = 0; j < N; j++)
     {
-      a[i] = (DTYPE)i;
-      b[i] = (DTYPE)i;
+      a[j] = (DTYPE)j;
+      b[j] = (DTYPE)j;
       //printf(" %d", a[i]);		
-    }		
+    }
+
+    // for(int i = 0; i < N; i++)
+    // {
+    //   a[i] = (DTYPE)i;
+    //   b[i] = (DTYPE)i;
+    //   //printf(" %d", a[i]);		
+    // }		
     printf("\n");
  
     send_buffs[i] = a;
