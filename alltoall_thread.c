@@ -13,6 +13,8 @@ typedef int DTYPE;
 
 #define ALLTOALL_USE_SENDRECV
 
+#define VERIFICATION_2
+
 //#define DEBUG_PRINT
 
 typedef struct thread_args_s {
@@ -160,8 +162,9 @@ void *thread_func(void *thread_args)
  
 int main( int argc, char *argv[] )
 {
-  int mpi_rank;//iam
-  int mpi_comm_size;//np
+  int mpi_rank;
+  int global_rank;
+  int mpi_comm_size;
   MPI_Comm  mpi_comm;  
   int provided;
  
@@ -183,19 +186,22 @@ int main( int argc, char *argv[] )
 	  b = (DTYPE *)malloc(N*sizeof(DTYPE));
  
     printf("N %ld, rank=%d, tid %d, a=", N, mpi_rank, i);
+#ifdef VERIFICATION_1    
     for(int j = 0; j < N; j++)
     {
       a[j] = (DTYPE)j;
       b[j] = (DTYPE)j;
       //printf(" %d", a[i]);		
     }
-
-    // for(int i = 0; i < N; i++)
-    // {
-    //   a[i] = (DTYPE)i;
-    //   b[i] = (DTYPE)i;
-    //   //printf(" %d", a[i]);		
-    // }		
+#else
+    global_rank = mpi_rank * NTHREADS + i;
+    for(int j = 0; j < N; j++)
+    {
+      a[j] = (DTYPE)(global_rank * N + j);
+      b[j] = (DTYPE)(global_rank * N + j);
+      // printf(" %d", a[j]);		
+    }
+#endif		
     printf("\n");
  
     send_buffs[i] = a;
@@ -229,28 +235,41 @@ int main( int argc, char *argv[] )
 	
 	MPI_Barrier(mpi_comm);
 
-  int global_rank;
   for (int i = 0; i < NTHREADS; i++) {
     a = send_buffs[i];
     b = recv_buffs[i];
     global_rank = mpi_rank * NTHREADS + i;
  
     // printf("rank=%d, tid %d, b=", mpi_rank, i);
-    // for(int i = 0; i < N; i++)
+    // for(int j = 0; j < N; j++)
     // {
-    //   printf(" %d", (int)b[i]);		
+    //   printf(" %d", (int)b[j]);		
     // }
     // printf("\n");
-    
+
+#ifdef VERIFICATION_1    
     int start_value = global_rank * SEND_COUNT;
-    for (int i = 0; i < N; i += SEND_COUNT) {
-      for (int j = 0; j < SEND_COUNT; j++) {
-        if (b[i+j] != (DTYPE)start_value + j) {
-          printf("i %d j %d, val %d\n", i, j, (int)b[i+j]);
+    for (int x = 0; x < N; x += SEND_COUNT) {
+      for (int y = 0; y < SEND_COUNT; y++) {
+        if (b[x+y] != (DTYPE)start_value + y) {
+          printf("x %d y %d, val %d\n", x, y, (int)b[x+y]);
           assert(0);
         }
       }
     }
+#else
+    int ct_x = 0;
+    for (int x = 0; x < N; x += SEND_COUNT) {
+      int start_value = global_rank * SEND_COUNT + ct_x * N;
+      for (int y = 0; y < SEND_COUNT; y++) {
+        if (b[x+y] != (DTYPE)start_value + y) {
+          printf("x %d y %d, val %d\n", x, y, (int)b[x+y]);
+          assert(0);
+        }
+      }
+      ct_x ++;
+    }
+#endif
 
     printf("rank %d, tid %d, SUCCESS\n", mpi_rank, i);
 
