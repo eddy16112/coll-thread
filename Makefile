@@ -1,4 +1,4 @@
-DEBUG ?= 0
+DEBUG ?= 1
 
 CC = mpicc
 CC_FLAGS ?=
@@ -16,7 +16,7 @@ endif
 
 .PHONY: build clean
 
-OUTFILE := alltoall_thread
+OUTFILE := alltoall_test
 
 build: $(OUTFILE)
 
@@ -26,6 +26,9 @@ clean:
 %.o: %.c
 	$(CC) -c -o $@ $< $(CC_FLAGS) $(INC_FLAGS)
 
-alltoall_thread: alltoall_thread.o
+alltoall_test: alltoall_thread.o alltoall_local.o alltoall_test.o
 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
+
+# alltoall_thread2: alltoall_thread2.o
+# 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
 
