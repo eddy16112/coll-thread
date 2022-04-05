@@ -1,28 +1,49 @@
 #ifndef COLL_H
 #define COLL_H
 
-//#define COLL_USE_MPI
+//#define DEBUG_PRINT
 
-#define DEBUG_PRINT
-
-#if defined(COLL_USE_MPI)
+#if defined (COLL_USE_MPI)
 #include <mpi.h>
 #else
-#include <mpi.h>
 #include <stdbool.h>
 #define MAX_NB_THREADS 128
-#endif
 
 typedef struct local_buffer_s {
   void* buffers[MAX_NB_THREADS];
   bool buffers_ready[MAX_NB_THREADS];
 } local_buffer_t;
 
+extern local_buffer_t local_buffer;
+
+#endif
+
+#if defined (COLL_USE_MPI)
+typedef MPI_Datatype collDataType_t;
+// TODO: fix it
+extern MPI_Datatype collChar;
+extern MPI_Datatype collInt;
+extern MPI_Datatype collFloat;
+extern MPI_Datatype collDouble;
+#else // NCCL and local
+typedef enum { 
+  collChar       = 0,
+  collInt        = 2,
+  collUint32     = 3,
+  collInt64      = 4,
+  collUint64     = 5,
+#if 0
+  collHalf       = 6,
+#endif  
+  collFloat      = 7,
+  collDouble     = 8,
+} collDataType_t;
+#endif
+
 typedef struct Coll_Comm_s {
-#if defined(COLL_USE_MPI)
+#if defined (COLL_USE_MPI)
   MPI_Comm comm;
 #else
-  MPI_Comm comm;
   volatile local_buffer_t *local_buffer;
 #endif
   int mpi_comm_size;
@@ -31,15 +52,17 @@ typedef struct Coll_Comm_s {
   int tid;
 } Coll_Comm;
 
-extern local_buffer_t local_buffer;
+int Coll_Alltoall(void *sendbuf, int sendcount, collDataType_t sendtype, 
+                  void *recvbuf, int recvcount, collDataType_t recvtype, 
+                  Coll_Comm global_comm);
 
-#if defined(COLL_USE_MPI)
-int MPI_Alltoall_thread(void *sendbuf, int sendcount, MPI_Datatype sendtype, 
-                        void *recvbuf, int recvcount, MPI_Datatype recvtype, 
+#if defined (COLL_USE_MPI)
+int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
+                        void *recvbuf, int recvcount, collDataType_t recvtype, 
                         Coll_Comm global_comm);
 #else
-int Coll_Alltoall_local(void *sendbuf, int sendcount, MPI_Datatype sendtype, 
-                        void *recvbuf, int recvcount, MPI_Datatype recvtype, 
+int Coll_Alltoall_local(void *sendbuf, int sendcount, collDataType_t sendtype, 
+                        void *recvbuf, int recvcount, collDataType_t recvtype, 
                         Coll_Comm global_comm);
 #endif
 #endif // ifndef COLL_H

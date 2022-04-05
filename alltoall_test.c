@@ -8,7 +8,7 @@
 
 #define NTHREADS 16
 #define SEND_COUNT 80
-#define MPI_DTYPE MPI_INT
+#define COLL_DTYPE collInt
 typedef int DTYPE;
 
 #define VERIFICATION_2
@@ -20,46 +20,43 @@ typedef struct thread_args_s {
   int nb_threads;
   int mpi_rank;
   int tid;
+#if defined (COLL_USE_MPI)
   MPI_Comm comm;
+#endif
   void *sendbuf;
   int sendcount; 
-  MPI_Datatype sendtype;
+  collDataType_t sendtype;
   void *recvbuf;
   int recvcount;
-  MPI_Datatype recvtype;
+  collDataType_t recvtype;
 } thread_args_t;
 
 void *thread_func(void *thread_args)
 {
   thread_args_t *args = (thread_args_t*)thread_args;
 
-  int total_size = args->mpi_comm_size * args->nb_threads;
-
   Coll_Comm global_comm;
   global_comm.mpi_comm_size = args->mpi_comm_size;
   global_comm.mpi_rank = args->mpi_rank;
-  global_comm.comm = args->comm;
   global_comm.nb_threads = args->nb_threads;
   global_comm.tid = args->tid;
 
-#if defined(COLL_USE_MPI)
-  printf("MPI: Thread %d, total_size %d\n", args->tid, total_size);
-  MPI_Alltoall_thread(args->sendbuf, args->sendcount, args->sendtype, 
-                      args->recvbuf, args->recvcount, args->recvtype,
-                      global_comm);
-#else
-  printf("Local: Thread %d, total_size %d, send_buf %p\n", args->tid, total_size, args->sendbuf);
-  Coll_Alltoall_local(args->sendbuf, args->sendcount, args->sendtype, 
-                      args->recvbuf, args->recvcount, args->recvtype,
-                      global_comm);
+ #if defined (COLL_USE_MPI)
+  global_comm.comm = args->comm;
 #endif
+
+  Coll_Alltoall(args->sendbuf, args->sendcount, args->sendtype, 
+                args->recvbuf, args->recvcount, args->recvtype,
+                global_comm);
 }
  
 int main( int argc, char *argv[] )
 {
-  int mpi_rank;
-  int global_rank;
-  int mpi_comm_size;
+  int mpi_rank = 0;
+  int global_rank = 0;
+  int mpi_comm_size = 1;
+
+#if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
   MPI_Comm  mpi_comm;  
   int provided;
  
@@ -67,6 +64,7 @@ int main( int argc, char *argv[] )
   MPI_Comm_dup(MPI_COMM_WORLD, &mpi_comm);
   MPI_Comm_rank(mpi_comm, &mpi_rank);
   MPI_Comm_size(mpi_comm, &mpi_comm_size);
+#endif
 
   size_t N = mpi_comm_size * SEND_COUNT * NTHREADS;
 
@@ -103,7 +101,9 @@ int main( int argc, char *argv[] )
     recv_buffs[i] = b;
   }
  
+ #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
   MPI_Barrier(mpi_comm);
+#endif
 
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
@@ -115,14 +115,16 @@ int main( int argc, char *argv[] )
     args[i].mpi_comm_size = mpi_comm_size;
     args[i].tid = i;
     args[i].nb_threads = NTHREADS;
+ #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
     args[i].comm = mpi_comm;
+  #endif
     args[i].sendbuf = send_buffs[i];
-    //args[i].sendbuf = MPI_IN_PLACE;
+    //args[i].sendbuf = recv_buffs[i];
     args[i].sendcount = SEND_COUNT;
-    args[i].sendtype = MPI_DTYPE;
+    args[i].sendtype = COLL_DTYPE;
     args[i].recvbuf = recv_buffs[i];
     args[i].recvcount = SEND_COUNT;
-    args[i].recvtype = MPI_DTYPE;
+    args[i].recvtype = COLL_DTYPE;
     pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
     //thread_func((void *)&(args[i]));
   }
@@ -131,8 +133,10 @@ int main( int argc, char *argv[] )
       pthread_join( thread_id[i], NULL); 
   }
   pthread_barrier_destroy(&barrier);
-	
+
+ #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
 	MPI_Barrier(mpi_comm);
+#endif
 
   for (int i = 0; i < NTHREADS; i++) {
     a = send_buffs[i];
@@ -179,6 +183,8 @@ int main( int argc, char *argv[] )
   free(send_buffs);
   free(recv_buffs);
  
+#if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
   MPI_Finalize();
+#endif
   return 0;
 }

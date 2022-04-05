@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include <assert.h>
 #include <string.h>
 
@@ -9,24 +10,40 @@
 #define ALLTOALL_USE_SENDRECV
 
 local_buffer_t local_buffer;
+
+static size_t get_dtype_size(collDataType_t dtype)
+{
+  if (dtype == collChar) {
+    return sizeof(char);
+  } else if (dtype == collInt) {
+    return sizeof(int);
+  } else if (dtype == collFloat) {
+    return sizeof(float);
+  } else if (dtype == collDouble) {
+    return sizeof(double);
+  } else {
+    assert(0);
+    return -1;
+  }
+} 
  
-int Coll_Alltoall_local(void *sendbuf, int sendcount, MPI_Datatype sendtype, 
-                        void *recvbuf, int recvcount, MPI_Datatype recvtype, 
+int Coll_Alltoall_local(void *sendbuf, int sendcount, collDataType_t sendtype, 
+                        void *recvbuf, int recvcount, collDataType_t recvtype, 
                         Coll_Comm global_comm)
 {	
   int res;
-  MPI_Status status;
 
   assert(recvcount == sendcount);
+  assert(sendtype == recvtype);
 
   int total_size = global_comm.nb_threads;
 
-  int sendtype_extent = 4;
-  int recvtype_extent = 4;
+  int sendtype_extent = get_dtype_size(sendtype);
+  int recvtype_extent = get_dtype_size(recvtype);
  
   int global_rank = global_comm.tid;
 
-  if (sendbuf == MPI_IN_PLACE) {
+  if (sendbuf == recvbuf) {
     assert(0);
   }
 
@@ -45,8 +62,8 @@ int Coll_Alltoall_local(void *sendbuf, int sendcount, MPI_Datatype sendtype,
     char* src = (char*)src_base + (ptrdiff_t)recvfrom_seg_id * sendtype_extent * sendcount;
     char* dst = (char*)recvbuf + (ptrdiff_t)recvfrom_global_rank * recvtype_extent * recvcount;
 #ifdef DEBUG_PRINT
-    printf("i: %d === global_rank %d, copy rank %d (seg %d, %p) to rank %d (seg %d, %p)\n", 
-      i, global_rank, recvfrom_global_rank, recvfrom_seg_id, src, global_rank, recvfrom_global_rank, dst);
+    printf("i: %d === global_rank %d, dtype %d, copy rank %d (seg %d, %p) to rank %d (seg %d, %p)\n", 
+      i, global_rank, sendtype_extent, recvfrom_global_rank, recvfrom_seg_id, src, global_rank, recvfrom_global_rank, dst);
 #endif
     memcpy(dst, src, sendcount * sendtype_extent);
 	}
