@@ -65,9 +65,9 @@ int main( int argc, char *argv[] )
   MPI_Comm_dup(MPI_COMM_WORLD, &mpi_comm);
   MPI_Comm_rank(mpi_comm, &mpi_rank);
   MPI_Comm_size(mpi_comm, &mpi_comm_size);
-  pid_t pid = getpid();
-  printf("rank %d, pid %ld\n", mpi_rank, pid);
-  sleep(10);
+  // pid_t pid = getpid();
+  // printf("rank %d, pid %ld\n", mpi_rank, pid);
+  // sleep(10);
 #endif
 
   size_t N = mpi_comm_size * SEND_COUNT * NTHREADS;

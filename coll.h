@@ -3,6 +3,8 @@
 
 //#define DEBUG_PRINT
 
+#include <stddef.h>
+
 #if defined (COLL_USE_MPI)
 #include <mpi.h>
 #else
