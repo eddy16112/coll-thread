@@ -54,6 +54,7 @@ int Coll_Gather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
       i, global_rank, global_comm.mpi_rank, global_comm.tid, 
       dst, i, recvfrom_mpi_rank, tag);
 #endif
+    assert(dst != NULL);
     if (global_rank == i) {
       memcpy(dst, sendbuf, incr);
     } else {

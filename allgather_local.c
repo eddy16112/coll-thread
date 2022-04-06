@@ -34,7 +34,6 @@ int Coll_Allgather_local(void *sendbuf, int sendcount, collDataType_t sendtype,
   __sync_synchronize();
 
   int recvfrom_global_rank;
-  int recvfrom_seg_id = global_rank;
   void *src_base = NULL;
 	for(int i = 0 ; i < total_size; i++) {
     recvfrom_global_rank = i;
@@ -42,8 +41,8 @@ int Coll_Allgather_local(void *sendbuf, int sendcount, collDataType_t sendtype,
     char* src = (char*)global_comm.local_buffer->buffers[recvfrom_global_rank];
     char* dst = (char*)recvbuf + (ptrdiff_t)recvfrom_global_rank * recvtype_extent * recvcount;
 #ifdef DEBUG_PRINT
-    printf("i: %d === global_rank %d, dtype %d, copy rank %d (seg %d, %p) to rank %d (seg %d, %p)\n", 
-      i, global_rank, sendtype_extent, recvfrom_global_rank, recvfrom_seg_id, src, global_rank, recvfrom_global_rank, dst);
+    printf("i: %d === global_rank %d, dtype %d, copy rank %d (%p) to rank %d (%p)\n", 
+      i, global_rank, sendtype_extent, recvfrom_global_rank, src, global_rank, dst);
 #endif
     memcpy(dst, src, sendcount * sendtype_extent);
 	}

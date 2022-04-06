@@ -1,5 +1,5 @@
-DEBUG		?= 0
-COLL_NETWORKS	?= local
+DEBUG		?= 1
+COLL_NETWORKS	?= mpi
 
 CC			= mpicc
 CC_FLAGS	?=
