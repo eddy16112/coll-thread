@@ -7,11 +7,6 @@
 #include "coll.h"
 
 #define ALLTOALL_USE_SENDRECV
-
-MPI_Datatype collChar = MPI_CHAR;
-MPI_Datatype collInt = MPI_INT;
-MPI_Datatype collFloat = MPI_FLOAT;
-MPI_Datatype collDouble = MPI_DOUBLE;
  
 int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
                         void *recvbuf, int recvcount, collDataType_t recvtype, 
@@ -29,6 +24,8 @@ int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
   int global_rank = global_comm.mpi_rank * global_comm.nb_threads + global_comm.tid;
 
   void *sendbuf_tmp = NULL;
+
+  // MPI_IN_PLACE
   if (sendbuf == recvbuf) {
     sendbuf_tmp = (void *)malloc(total_size * recvtype_extent * recvcount);
     memcpy(sendbuf_tmp, recvbuf, total_size * recvtype_extent * recvcount);
@@ -101,7 +98,7 @@ int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
 	}
 #endif
 
-  if (sendbuf == MPI_IN_PLACE) {
+  if (sendbuf == recvbuf) {
     free(sendbuf_tmp);
   }
 

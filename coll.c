@@ -2,6 +2,13 @@
 
 #include "coll.h"
 
+#if defined (COLL_USE_MPI)
+MPI_Datatype collChar = MPI_CHAR;
+MPI_Datatype collInt = MPI_INT;
+MPI_Datatype collFloat = MPI_FLOAT;
+MPI_Datatype collDouble = MPI_DOUBLE;
+#endif
+
 int Coll_Alltoall(void *sendbuf, int sendcount, collDataType_t sendtype, 
                   void *recvbuf, int recvcount, collDataType_t recvtype, 
                   Coll_Comm global_comm)

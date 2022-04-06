@@ -50,6 +50,7 @@ typedef struct Coll_Comm_s {
   int nb_threads;
   int mpi_rank;
   int tid;
+  int starting_tag;
 } Coll_Comm;
 
 int Coll_Alltoall(void *sendbuf, int sendcount, collDataType_t sendtype, 
@@ -60,6 +61,19 @@ int Coll_Alltoall(void *sendbuf, int sendcount, collDataType_t sendtype,
 int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
                         void *recvbuf, int recvcount, collDataType_t recvtype, 
                         Coll_Comm global_comm);
+
+int Coll_Gather_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
+                       void *recvbuf, int recvcount, collDataType_t recvtype, 
+                       int root,
+                       Coll_Comm global_comm);
+
+int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
+                          void *recvbuf, int recvcount, collDataType_t recvtype, 
+                          Coll_Comm global_comm);
+
+int Coll_Bcast_thread(void *buf, int count, collDataType_t type, 
+                      int root,
+                      Coll_Comm global_comm);
 #else
 int Coll_Alltoall_local(void *sendbuf, int sendcount, collDataType_t sendtype, 
                         void *recvbuf, int recvcount, collDataType_t recvtype, 
