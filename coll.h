@@ -57,6 +57,19 @@ int Coll_Alltoall(void *sendbuf, int sendcount, collDataType_t sendtype,
                   void *recvbuf, int recvcount, collDataType_t recvtype, 
                   Coll_Comm global_comm);
 
+int Coll_Gather(void *sendbuf, int sendcount, collDataType_t sendtype, 
+                void *recvbuf, int recvcount, collDataType_t recvtype, 
+                int root,
+                Coll_Comm global_comm);
+
+int Coll_Allgather(void *sendbuf, int sendcount, collDataType_t sendtype, 
+                   void *recvbuf, int recvcount, collDataType_t recvtype, 
+                   Coll_Comm global_comm);
+
+int Coll_Bcast(void *buf, int count, collDataType_t type, 
+               int root,
+               Coll_Comm global_comm);
+
 #if defined (COLL_USE_MPI)
 int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
                         void *recvbuf, int recvcount, collDataType_t recvtype, 
@@ -75,8 +88,13 @@ int Coll_Bcast_thread(void *buf, int count, collDataType_t type,
                       int root,
                       Coll_Comm global_comm);
 #else
+size_t get_dtype_size(collDataType_t dtype);
 int Coll_Alltoall_local(void *sendbuf, int sendcount, collDataType_t sendtype, 
                         void *recvbuf, int recvcount, collDataType_t recvtype, 
                         Coll_Comm global_comm);
+
+int Coll_Allgather_local(void *sendbuf, int sendcount, collDataType_t sendtype, 
+                         void *recvbuf, int recvcount, collDataType_t recvtype, 
+                         Coll_Comm global_comm);
 #endif
 #endif // ifndef COLL_H

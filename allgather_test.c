@@ -7,7 +7,7 @@
 #include "coll.h"
 
 #define NTHREADS 16
-#define SEND_COUNT 2
+#define SEND_COUNT 8
 #define COLL_DTYPE collInt
 typedef int DTYPE;
 
@@ -45,9 +45,9 @@ void *thread_func(void *thread_args)
   global_comm.comm = args->comm;
 #endif
 
-  Coll_Allgather_thread(args->sendbuf, args->sendcount, args->sendtype, 
-                        args->recvbuf, args->recvcount, args->recvtype,
-                        global_comm);
+  Coll_Allgather(args->sendbuf, args->sendcount, args->sendtype, 
+                 args->recvbuf, args->recvcount, args->recvtype,
+                 global_comm);
 }
  
 int main( int argc, char *argv[] )

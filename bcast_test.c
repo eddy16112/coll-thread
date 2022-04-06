@@ -44,8 +44,8 @@ void *thread_func(void *thread_args)
   global_comm.comm = args->comm;
 #endif
 
-  Coll_Bcast_thread(args->buf, args->count, args->type, 
-                    args->root, global_comm);
+  Coll_Bcast(args->buf, args->count, args->type, 
+             args->root, global_comm);
 }
  
 int main( int argc, char *argv[] )

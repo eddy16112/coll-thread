@@ -1,5 +1,5 @@
-DEBUG		?= 1
-COLL_NETWORKS	?= mpi
+DEBUG		?= 0
+COLL_NETWORKS	?= local
 
 CC			= mpicc
 CC_FLAGS	?=
@@ -28,7 +28,8 @@ COLL_SRC	+= alltoall_thread.c \
 						 bcast_thread.c
 endif
 ifeq ($(strip $(COLL_NETWORKS)),local)
-COLL_SRC	+= alltoall_local.c
+COLL_SRC	+= alltoall_local.c \
+						 allgather_local.c
 endif
 
 COLL_OBJS	:= $(COLL_SRC:.c=.c.o)

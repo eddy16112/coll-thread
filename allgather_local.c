@@ -7,9 +7,9 @@
 
 #include "coll.h"
  
-int Coll_Alltoall_local(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                        void *recvbuf, int recvcount, collDataType_t recvtype, 
-                        Coll_Comm global_comm)
+int Coll_Allgather_local(void *sendbuf, int sendcount, collDataType_t sendtype, 
+                         void *recvbuf, int recvcount, collDataType_t recvtype, 
+                         Coll_Comm global_comm)
 {	
   int res;
 
@@ -20,7 +20,8 @@ int Coll_Alltoall_local(void *sendbuf, int sendcount, collDataType_t sendtype,
 
   int sendtype_extent = get_dtype_size(sendtype);
   int recvtype_extent = get_dtype_size(recvtype);
- 
+  assert(sendtype_extent == recvtype_extent);
+
   int global_rank = global_comm.tid;
 
   if (sendbuf == recvbuf) {
@@ -35,11 +36,10 @@ int Coll_Alltoall_local(void *sendbuf, int sendcount, collDataType_t sendtype,
   int recvfrom_global_rank;
   int recvfrom_seg_id = global_rank;
   void *src_base = NULL;
-	for(int i = 1 ; i < total_size + 1; i++) {
-    recvfrom_global_rank = (global_rank + total_size - i) % total_size;
+	for(int i = 0 ; i < total_size; i++) {
+    recvfrom_global_rank = i;
     while (global_comm.local_buffer->buffers_ready[recvfrom_global_rank] != true);
-    src_base = global_comm.local_buffer->buffers[recvfrom_global_rank];
-    char* src = (char*)src_base + (ptrdiff_t)recvfrom_seg_id * sendtype_extent * sendcount;
+    char* src = (char*)global_comm.local_buffer->buffers[recvfrom_global_rank];
     char* dst = (char*)recvbuf + (ptrdiff_t)recvfrom_global_rank * recvtype_extent * recvcount;
 #ifdef DEBUG_PRINT
     printf("i: %d === global_rank %d, dtype %d, copy rank %d (seg %d, %p) to rank %d (seg %d, %p)\n", 
