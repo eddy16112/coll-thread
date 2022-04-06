@@ -50,6 +50,7 @@ void *thread_func(void *thread_args)
   Coll_Gather(args->sendbuf, args->sendcount, args->sendtype, 
               args->recvbuf, args->recvcount, args->recvtype,
               args->root, global_comm);
+  return NULL;
 }
  
 int main( int argc, char *argv[] )

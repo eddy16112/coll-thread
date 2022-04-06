@@ -6,7 +6,7 @@
 
 #include "coll.h"
 
-//#define ALLGATHER_USE_BCAST
+#define ALLGATHER_USE_BCAST
  
 int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
                           void *recvbuf, int recvcount, collDataType_t recvtype, 
@@ -35,7 +35,7 @@ int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
                     0, global_comm);
 #else
 	for(int i = 0 ; i < total_size; i++) {
-    printf("global_rank %d, i %d\n", global_rank, i);
+    // printf("global_rank %d, i %d\n", global_rank, i);
     global_comm.starting_tag = i;
     Coll_Gather_thread(sendbuf, sendcount, sendtype, 
                        recvbuf, recvcount, recvtype, 
