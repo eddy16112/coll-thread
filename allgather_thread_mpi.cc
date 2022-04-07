@@ -15,9 +15,6 @@ int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
   int res;
 
   int total_size = global_comm.mpi_comm_size * global_comm.nb_threads;
-	MPI_Status status;
- 
-  int global_rank = global_comm.mpi_rank * global_comm.nb_threads + global_comm.tid;
 
   // MPI_IN_PLACE
   if (sendbuf == recvbuf) {
@@ -34,6 +31,7 @@ int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
   Coll_Bcast_thread(recvbuf, recvcount * total_size, recvtype, 
                     0, global_comm);
 #else
+  int global_rank = global_comm.mpi_rank * global_comm.nb_threads + global_comm.tid;
 	for(int i = 0 ; i < total_size; i++) {
     // printf("global_rank %d, i %d\n", global_rank, i);
     global_comm.starting_tag = i;

@@ -40,7 +40,7 @@ COLL_TEST_SRC	+= alltoall_test.cc \
 								 allgather_test.cc \
 								 bcast_test.cc
 
-COLL_TEST_OBJS	:= $(COLL_TEST_SRC:.c=.c.o)
+COLL_TEST_OBJS	:= $(COLL_TEST_SRC:.cc=.cc.o)
 
 .PHONY: build clean
 
@@ -71,3 +71,4 @@ bcast_test: $(COLL_OBJS) bcast_test.cc.o
 
 # alltoall_thread2: alltoall_thread2.o
 # 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
+

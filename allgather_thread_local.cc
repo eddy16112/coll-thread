@@ -10,8 +10,6 @@ int Coll_Allgather_local(void *sendbuf, int sendcount, collDataType_t sendtype,
                          void *recvbuf, int recvcount, collDataType_t recvtype, 
                          Coll_Comm global_comm)
 {	
-  int res;
-
   assert(recvcount == sendcount);
   assert(sendtype == recvtype);
 
@@ -33,7 +31,6 @@ int Coll_Allgather_local(void *sendbuf, int sendcount, collDataType_t sendtype,
   __sync_synchronize();
 
   int recvfrom_global_rank;
-  void *src_base = NULL;
 	for(int i = 0 ; i < total_size; i++) {
     recvfrom_global_rank = i;
     while (global_comm.local_buffer->buffers_ready[recvfrom_global_rank] != true);
