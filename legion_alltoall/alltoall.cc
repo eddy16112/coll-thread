@@ -63,10 +63,10 @@ void top_level_task(const Task *task,
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_comm_size);
   int num_subregions = nb_threads * mpi_comm_size;
-  printf("running top level task on %d node, %d total threads\n", mpi_comm_size, num_subregions);
+  printf("running top level task on %d node, %d total threads, sendcount %d\n", mpi_comm_size, num_subregions, sendcount);
 #else
   int num_subregions = nb_threads;
-  printf("running top level task on single node, %d threads\n", num_subregions);
+  printf("running top level task on single node, %d threads, sendcount %d\n", num_subregions, sendcount);
 #endif
 
   int num_elements = num_subregions * sendcount * num_subregions; 
@@ -110,35 +110,51 @@ void top_level_task(const Task *task,
   // Create our launch domain.  Note that is the same as color domain
   // as we are going to launch one task for each subregion we created.
   ArgumentMap arg_map;
-
-  IndexLauncher init_launcher(INIT_FIELD_TASK_ID, color_is, 
-                              TaskArgument(NULL, 0), arg_map);
-  init_launcher.add_region_requirement(
-      RegionRequirement(input_lp, 0/*projection ID*/, 
-                        WRITE_DISCARD, EXCLUSIVE, input_lr));
-  init_launcher.region_requirements[0].add_field(FID_X);
-  runtime->execute_index_space(ctx, init_launcher);
-
-  IndexLauncher daxpy_launcher(ALLTOALL_TASK_ID, color_is,
-                               TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
-  daxpy_launcher.add_region_requirement(
-      RegionRequirement(input_lp, 0/*projection ID*/,
-                        READ_ONLY, EXCLUSIVE, input_lr));
-  daxpy_launcher.region_requirements[0].add_field(FID_X);
-  daxpy_launcher.add_region_requirement(
-      RegionRequirement(output_lp, 0/*projection ID*/,
-                        WRITE_DISCARD, EXCLUSIVE, output_lr));
-  daxpy_launcher.region_requirements[1].add_field(FID_Z);
-  runtime->execute_index_space(ctx, daxpy_launcher);
+  {
+    IndexLauncher init_launcher(INIT_FIELD_TASK_ID, color_is, 
+                                TaskArgument(NULL, 0), arg_map);
+    init_launcher.add_region_requirement(
+        RegionRequirement(input_lp, 0/*projection ID*/, 
+                          WRITE_DISCARD, EXCLUSIVE, input_lr));
+    init_launcher.region_requirements[0].add_field(FID_X);
+    runtime->execute_index_space(ctx, init_launcher);
+  }
+  {
+    IndexLauncher daxpy_launcher(ALLTOALL_TASK_ID, color_is,
+                                TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
+    daxpy_launcher.add_region_requirement(
+        RegionRequirement(input_lp, 0/*projection ID*/,
+                          READ_ONLY, EXCLUSIVE, input_lr));
+    daxpy_launcher.region_requirements[0].add_field(FID_X);
+    daxpy_launcher.add_region_requirement(
+        RegionRequirement(output_lp, 0/*projection ID*/,
+                          WRITE_DISCARD, EXCLUSIVE, output_lr));
+    daxpy_launcher.region_requirements[1].add_field(FID_Z);
+    runtime->execute_index_space(ctx, daxpy_launcher);
+  }
+  // {
+  //   IndexLauncher init_launcher(INIT_FIELD_TASK_ID, color_is, 
+  //                               TaskArgument(NULL, 0), arg_map);
+  //   init_launcher.add_region_requirement(
+  //       RegionRequirement(output_lp, 0/*projection ID*/, 
+  //                         WRITE_DISCARD, EXCLUSIVE, output_lr));
+  //   init_launcher.region_requirements[0].add_field(FID_Z);
+  //   runtime->execute_index_space(ctx, init_launcher);
+  // }
+  // {
+  //   IndexLauncher daxpy_launcher(ALLTOALL_TASK_ID, color_is,
+  //                               TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
+  //   daxpy_launcher.add_region_requirement(
+  //       RegionRequirement(input_lp, 0/*projection ID*/,
+  //                         READ_ONLY, EXCLUSIVE, input_lr));
+  //   daxpy_launcher.region_requirements[0].add_field(FID_X);
+  //   daxpy_launcher.add_region_requirement(
+  //       RegionRequirement(output_lp, 0/*projection ID*/,
+  //                         WRITE_DISCARD, EXCLUSIVE, output_lr));
+  //   daxpy_launcher.region_requirements[1].add_field(FID_Z);
+  //   runtime->execute_index_space(ctx, daxpy_launcher);
+  // }
                     
-  // TaskLauncher check_launcher(CHECK_TASK_ID, TaskArgument(NULL, 0));
-  // check_launcher.add_region_requirement(
-  //     RegionRequirement(input_lr, READ_ONLY, EXCLUSIVE, input_lr));
-  // check_launcher.region_requirements[0].add_field(FID_X);
-  // check_launcher.add_region_requirement(
-  //     RegionRequirement(output_lr, READ_ONLY, EXCLUSIVE, output_lr));
-  // check_launcher.region_requirements[1].add_field(FID_Z);
-  // runtime->execute_task(ctx, check_launcher);
   IndexLauncher check_launcher(CHECK_TASK_ID, color_is,
                                TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
   check_launcher.add_region_requirement(
@@ -253,9 +269,9 @@ void check_task(const Task *task,
   int global_rank = mpi_rank * task_arg.nb_threads + tid;
   int start_value = global_rank * task_arg.sendcount;
   for (size_t i = 0; i < rect.volume(); i+= task_arg.sendcount) {
-    for (size_t j = 0; j < task_arg.sendcount; j++) {
-      if (recvbuf[i+j] != start_value + (int)j) {
-        printf("point %d, tid %d, i %ld j %ld, val %d, expect %ld\n", 
+    for (int j = 0; j < task_arg.sendcount; j++) {
+      if (recvbuf[i+j] != start_value + j) {
+        printf("point %d, tid %d, i %ld j %d, val %d, expect %d\n", 
                point, tid, i, j, recvbuf[i+j], start_value + j);
         assert(0);
       }

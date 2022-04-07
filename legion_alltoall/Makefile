@@ -27,17 +27,17 @@ USE_HDF         ?= 0		# Include HDF5 support (requires HDF5)
 ALT_MAPPERS     ?= 0		# Include alternative mappers (not recommended)
 
 # Put the binary file name here
-OUTFILE		?= partitioning 
+OUTFILE		?= alltoall 
 # List all the application source files here
 ifeq ($(strip $(USE_GASNET)),1)
-GEN_SRC		?= partitioning.cc	\
+GEN_SRC		?= alltoall.cc	\
 			   ../coll.cc \
 			   ../alltoall_thread_mpi.cc \
 			   ../allgather_thread_mpi.cc \
 			   ../gather_thread_mpi.cc \
 			   ../bcast_thread_mpi.cc
 else
-GEN_SRC		?= partitioning.cc	\
+GEN_SRC		?= alltoall.cc	\
 			   ../coll.cc \
 			   ../alltoall_thread_local.cc	\
 			   ../allgather_thread_local.cc
