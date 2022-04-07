@@ -22,14 +22,14 @@ endif
 COLL_SRC	?=
 COLL_SRC	+= coll.c
 ifeq ($(strip $(COLL_NETWORKS)),mpi)
-COLL_SRC	+= alltoall_thread.c \
-						 gather_thread.c \
-						 allgather_thread.c \
-						 bcast_thread.c
+COLL_SRC	+= alltoall_thread_mpi.c \
+						 gather_thread_mpi.c \
+						 allgather_thread_mpi.c \
+						 bcast_thread_mpi.c
 endif
 ifeq ($(strip $(COLL_NETWORKS)),local)
-COLL_SRC	+= alltoall_local.c \
-						 allgather_local.c
+COLL_SRC	+= alltoall_thread_local.c \
+						 allgather_thread_local.c
 endif
 
 COLL_OBJS	:= $(COLL_SRC:.c=.c.o)
