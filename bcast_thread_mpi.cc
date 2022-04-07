@@ -15,9 +15,19 @@ int Coll_Bcast_thread(void *buf, int count, collDataType_t type,
   int total_size = global_comm.mpi_comm_size * global_comm.nb_threads;
 	MPI_Status status;
  
-  int global_rank = global_comm.mpi_rank * global_comm.nb_threads + global_comm.tid;
+  int global_rank = global_comm.global_rank;
+#ifdef CYCLIC_MAPPING
+  assert(global_rank % global_comm.mpi_comm_size == global_comm.mpi_rank);
+#else
+  assert(global_rank / global_comm.nb_threads == global_comm.mpi_rank);
+  assert(global_rank == global_comm.mpi_rank * global_comm.nb_threads + global_comm.tid);
+#endif
 
+#ifdef CYCLIC_MAPPING
+  int root_mpi_rank = root % global_comm.mpi_comm_size;
+#else
   int root_mpi_rank = root / global_comm.nb_threads;
+#endif
 
   int tag;
 
@@ -37,7 +47,11 @@ int Coll_Bcast_thread(void *buf, int count, collDataType_t type,
   // root
   int sendto_mpi_rank;
 	for(int i = 0 ; i < total_size; i++) {
+#ifdef CYCLIC_MAPPING
+    sendto_mpi_rank = i % global_comm.mpi_comm_size;
+#else
     sendto_mpi_rank = i / global_comm.nb_threads;
+#endif
     tag = global_comm.starting_tag * 10000 + i;
 #ifdef DEBUG_PRINT
     printf("Bcast i: %d === global_rank %d, rank %d, tid %d, send to %d (%d), tag %d\n", 

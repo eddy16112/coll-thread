@@ -42,6 +42,7 @@ void *thread_func(void *thread_args)
   global_comm.nb_threads = args->nb_threads;
   global_comm.tid = args->tid;
   global_comm.starting_tag = 0;
+  global_comm.global_rank = args->mpi_rank * args->nb_threads + args->tid;
 
  #if defined (COLL_USE_MPI)
   global_comm.comm = args->comm;

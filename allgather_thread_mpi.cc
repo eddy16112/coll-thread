@@ -12,8 +12,6 @@ int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
                           void *recvbuf, int recvcount, collDataType_t recvtype, 
                           Coll_Comm global_comm)
 {	
-  int res;
-
   int total_size = global_comm.mpi_comm_size * global_comm.nb_threads;
 
   // MPI_IN_PLACE

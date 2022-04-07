@@ -16,14 +16,24 @@ int Coll_Gather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
   int total_size = global_comm.mpi_comm_size * global_comm.nb_threads;
 	MPI_Status status;
  
-  int global_rank = global_comm.mpi_rank * global_comm.nb_threads + global_comm.tid;
+  int global_rank = global_comm.global_rank;
+#ifdef CYCLIC_MAPPING
+  assert(global_rank % global_comm.mpi_comm_size == global_comm.mpi_rank);
+#else
+  assert(global_rank / global_comm.nb_threads == global_comm.mpi_rank);
+  assert(global_rank == global_comm.mpi_rank * global_comm.nb_threads + global_comm.tid);
+#endif
 
   // MPI_IN_PLACE
   if (sendbuf == recvbuf) {
     assert(0);
   }
 
+#ifdef CYCLIC_MAPPING
+  int root_mpi_rank = root % global_comm.mpi_comm_size;
+#else
   int root_mpi_rank = root / global_comm.nb_threads;
+#endif
 
   int tag;
 
@@ -47,7 +57,11 @@ int Coll_Gather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
   char *dst = (char*)recvbuf;
   int recvfrom_mpi_rank;
 	for(int i = 0 ; i < total_size; i++) {
+#ifdef CYCLIC_MAPPING
+    recvfrom_mpi_rank = i % global_comm.mpi_comm_size;
+#else
     recvfrom_mpi_rank = i / global_comm.nb_threads;
+#endif
     tag = global_comm.starting_tag * 10000 + i;
 #ifdef DEBUG_PRINT
     printf("Gather i: %d === global_rank %d, rank %d, tid %d, recv %p, from %d (%d), tag %d\n", 

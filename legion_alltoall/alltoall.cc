@@ -17,6 +17,7 @@
 #include <cstdio>
 #include <cassert>
 #include <cstdlib>
+#include <unistd.h>
 #include "../coll.h"
 #include "legion.h"
 using namespace Legion;
@@ -236,6 +237,7 @@ void alltoall_task(const Task *task,
 #endif
   global_comm.nb_threads = task_arg.nb_threads;
   global_comm.tid = point % task_arg.nb_threads;
+  global_comm.global_rank = point;
 
   Coll_Alltoall((void*)sendbuf, task_arg.sendcount, collInt, 
                 (void*)recvbuf, task_arg.sendcount, collInt,
@@ -266,7 +268,11 @@ void check_task(const Task *task,
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 #endif
   int tid = point % task_arg.nb_threads;
-  int global_rank = mpi_rank * task_arg.nb_threads + tid;
+  //int global_rank = mpi_rank * task_arg.nb_threads + tid;
+  int global_rank = point;
+#ifndef CYCLIC_MAPPING
+  assert(global_rank == mpi_rank * task_arg.nb_threads + tid);
+#endif
   int start_value = global_rank * task_arg.sendcount;
   for (size_t i = 0; i < rect.volume(); i+= task_arg.sendcount) {
     for (int j = 0; j < task_arg.sendcount; j++) {

@@ -178,7 +178,8 @@ void init_field_task(const Task *task,
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 #endif
   int tid = point % task_arg.nb_threads;
-  int global_rank = mpi_rank * task_arg.nb_threads + tid;
+  // int global_rank = mpi_rank * task_arg.nb_threads + tid;
+  int global_rank = point;
 
   assert(rect.volume() > task_arg.sendcount);
   for (int i = 0; i < task_arg.sendcount; i++) {
@@ -225,6 +226,7 @@ void alltoall_task(const Task *task,
 #endif
   global_comm.nb_threads = task_arg.nb_threads;
   global_comm.tid = point % task_arg.nb_threads;
+  global_comm.global_rank = point;
 
   Coll_Allgather((void*)sendbuf, task_arg.sendcount, collInt, 
                  (void*)recvbuf, task_arg.sendcount, collInt,
