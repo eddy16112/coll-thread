@@ -1,7 +1,7 @@
 DEBUG		?= 1
 COLL_NETWORKS	?= mpi
 
-CC			= mpicc
+CC			= mpicxx
 CC_FLAGS	?=
 LD_FLAGS	?= -lpthread
 INC_FLAGS	?=
@@ -20,25 +20,25 @@ ifeq ($(strip $(COLL_NETWORKS)),mpi)
 endif
 
 COLL_SRC	?=
-COLL_SRC	+= coll.c
+COLL_SRC	+= coll.cc
 ifeq ($(strip $(COLL_NETWORKS)),mpi)
-COLL_SRC	+= alltoall_thread_mpi.c \
-						 gather_thread_mpi.c \
-						 allgather_thread_mpi.c \
-						 bcast_thread_mpi.c
+COLL_SRC	+= alltoall_thread_mpi.cc \
+						 gather_thread_mpi.cc \
+						 allgather_thread_mpi.cc \
+						 bcast_thread_mpi.cc
 endif
 ifeq ($(strip $(COLL_NETWORKS)),local)
-COLL_SRC	+= alltoall_thread_local.c \
-						 allgather_thread_local.c
+COLL_SRC	+= alltoall_thread_local.cc \
+						 allgather_thread_local.cc
 endif
 
-COLL_OBJS	:= $(COLL_SRC:.c=.c.o)
+COLL_OBJS	:= $(COLL_SRC:.cc=.cc.o)
 
 
-COLL_TEST_SRC	+= alltoall_test.c \
-						 		 gather_test.c \
-								 allgather_test.c \
-								 bcast_test.c
+COLL_TEST_SRC	+= alltoall_test.cc \
+						 		 gather_test.cc \
+								 allgather_test.cc \
+								 bcast_test.cc
 
 COLL_TEST_OBJS	:= $(COLL_TEST_SRC:.c=.c.o)
 
@@ -51,24 +51,23 @@ build: $(OUTFILE)
 clean:
 	rm -rf *.o $(OUTFILE)
 
-$(COLL_OBJS) : %.c.o : %.c
+$(COLL_OBJS) : %.cc.o : %.cc
 	$(CC) -c -o $@ $< $(CC_FLAGS) $(INC_FLAGS)
 
-$(COLL_TEST_OBJS) : %.c.o : %.c
+$(COLL_TEST_OBJS) : %.cc.o : %.cc
 	$(CC) -c -o $@ $< $(CC_FLAGS) $(INC_FLAGS)
 
-alltoall_test: $(COLL_OBJS) alltoall_test.c.o
+alltoall_test: $(COLL_OBJS) alltoall_test.cc.o
 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
 
-gather_test: $(COLL_OBJS) gather_test.c.o
+gather_test: $(COLL_OBJS) gather_test.cc.o
 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
 
-allgather_test: $(COLL_OBJS) allgather_test.c.o
+allgather_test: $(COLL_OBJS) allgather_test.cc.o
 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
 
-bcast_test: $(COLL_OBJS) bcast_test.c.o
+bcast_test: $(COLL_OBJS) bcast_test.cc.o
 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
 
 # alltoall_thread2: alltoall_thread2.o
 # 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
-

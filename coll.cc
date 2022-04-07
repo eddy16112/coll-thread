@@ -66,7 +66,7 @@ int Coll_Allgather(void *sendbuf, int sendcount, collDataType_t sendtype,
                    void *recvbuf, int recvcount, collDataType_t recvtype, 
                    Coll_Comm global_comm)
 {
-  #if defined(COLL_USE_MPI)
+#if defined(COLL_USE_MPI)
   printf("MPI: Thread %d, total_size %d\n", global_comm.tid, global_comm.mpi_comm_size * global_comm.nb_threads);
   return Coll_Allgather_thread(sendbuf, sendcount, sendtype, 
                                recvbuf, recvcount, recvtype,
