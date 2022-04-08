@@ -23,12 +23,6 @@ int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
   MPI_Type_get_extent(recvtype, &lb, &recvtype_extent);
  
   int global_rank = global_comm.global_rank;
-#ifdef CYCLIC_MAPPING
-  assert(global_rank % global_comm.mpi_comm_size == global_comm.mpi_rank);
-#else
-  assert(global_rank / global_comm.nb_threads == global_comm.mpi_rank);
-  // assert(global_rank == global_comm.mpi_rank * global_comm.nb_threads + global_comm.tid);
-#endif
 
   void *sendbuf_tmp = NULL;
 
@@ -49,13 +43,10 @@ int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
     recvfrom_global_rank = (global_rank + total_size - i) % total_size;
     char* src = (char*)sendbuf_tmp + (ptrdiff_t)sendto_global_rank * sendtype_extent * sendcount;
     char* dst = (char*)recvbuf + (ptrdiff_t)recvfrom_global_rank * recvtype_extent * recvcount;
-#ifdef CYCLIC_MAPPING
-    sendto_mpi_rank = sendto_global_rank % global_comm.mpi_comm_size;
-    recvfrom_mpi_rank = recvfrom_global_rank % global_comm.mpi_comm_size;
-#else
-    sendto_mpi_rank = sendto_global_rank / global_comm.nb_threads;
-    recvfrom_mpi_rank = recvfrom_global_rank / global_comm.nb_threads;
-#endif
+    sendto_mpi_rank = global_comm.mapping_table.mpi_rank[sendto_global_rank];
+    recvfrom_mpi_rank = global_comm.mapping_table.mpi_rank[recvfrom_global_rank];
+    assert(sendto_global_rank == global_comm.mapping_table.global_rank[sendto_global_rank]);
+    assert(recvfrom_global_rank == global_comm.mapping_table.global_rank[recvfrom_global_rank]);
     // tag: seg idx + rank_idx
     int send_tag = sendto_global_rank * 10000 + global_rank; // which dst seg it sends to (in dst rank)
     int recv_tag = global_rank * 10000 + recvfrom_global_rank; // idx of current seg we are receving (in src/my rank)

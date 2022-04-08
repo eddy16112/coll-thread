@@ -36,14 +36,17 @@ void *thread_func(void *thread_args)
   thread_args_t *args = (thread_args_t*)thread_args;
 
   Coll_Comm global_comm;
-  global_comm.mpi_comm_size = args->mpi_comm_size;
-  global_comm.mpi_rank = args->mpi_rank;
-  global_comm.nb_threads = args->nb_threads;
-  global_comm.tid = args->tid;
-  global_comm.global_rank = args->mpi_rank * args->nb_threads + args->tid;
+  int global_rank = args->mpi_rank * args->nb_threads + args->tid;
+  int global_comm_size = args->mpi_comm_size * args->nb_threads;
 
  #if defined (COLL_USE_MPI)
-  global_comm.comm = args->comm;
+  int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
+  for (int i = 0; i < global_comm_size; i++) {
+    mapping_table[i] = i / args->nb_threads;
+  }
+  Coll_Create_comm(&global_comm, global_comm_size, global_rank, mapping_table);
+#else
+  Coll_Create_comm(&global_comm, global_comm_size, global_rank, NULL);
 #endif
 
   Coll_Alltoall(args->sendbuf, args->sendcount, args->sendtype, 

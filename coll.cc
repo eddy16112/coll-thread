@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
+#include <string.h>
+#include <cstdlib>
 
 #include "coll.h"
 
@@ -27,6 +29,45 @@ size_t get_dtype_size(collDataType_t dtype)
   }
 } 
 #endif
+
+int Coll_Create_comm(Coll_Comm *global_comm, int global_comm_size, int global_rank, const int *mapping_table)
+{
+  global_comm->global_comm_size = global_comm_size;
+  global_comm->global_rank = global_rank;
+  global_comm->starting_tag = 0;
+#if defined(COLL_USE_MPI)
+  int mpi_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+  global_comm->mpi_comm_size = 1;
+  global_comm->mpi_rank = mpi_rank;
+  global_comm->comm = MPI_COMM_WORLD;
+  if (mapping_table != NULL) {
+    global_comm->mapping_table.global_rank = (int *)malloc(sizeof(int) * global_comm_size);
+    global_comm->mapping_table.mpi_rank = (int *)malloc(sizeof(int) * global_comm_size);
+    memcpy(global_comm->mapping_table.mpi_rank, mapping_table, sizeof(int) * global_comm_size);
+    for (int i = 0; i < global_comm_size; i++) {
+      global_comm->mapping_table.global_rank[i] = i;
+    }
+  }
+#else
+  global_comm->mpi_comm_size = 1;
+  global_comm->mpi_rank = 0;
+#endif
+  return 0;
+}
+
+int Coll_Comm_free (Coll_Comm *global_comm)
+{
+#if defined(COLL_USE_MPI)
+  if (global_comm->mapping_table.global_rank != NULL) {
+    free(global_comm->mapping_table.global_rank);
+  }
+  if (global_comm->mapping_table.mpi_rank != NULL) {
+    free(global_comm->mapping_table.mpi_rank);
+  }
+#endif
+  return 0;
+}
 
 int Coll_Alltoall(void *sendbuf, int sendcount, collDataType_t sendtype, 
                   void *recvbuf, int recvcount, collDataType_t recvtype, 

@@ -26,12 +26,13 @@ enum TaskIDs {
   INIT_FIELD_TASK_ID,
   ALLTOALL_TASK_ID,
   CHECK_TASK_ID,
+  INIT_MAPPING_TASK_ID,
 };
 
 enum FieldIDs {
   FID_X,
-  FID_Y,
   FID_Z,
+  FID_RANK,
 };
 
 typedef struct task_args_s{
@@ -45,6 +46,7 @@ void top_level_task(const Task *task,
 {
   int nb_threads = 1;
   int sendcount = 8;
+  int missing_nodes = 0;
   {
     const InputArgs &command_args = Runtime::get_input_args();
     for (int i = 1; i < command_args.argc; i++)
@@ -53,6 +55,8 @@ void top_level_task(const Task *task,
         nb_threads = atoi(command_args.argv[++i]);
       if (!strcmp(command_args.argv[i],"-c"))
         sendcount = atoi(command_args.argv[++i]);
+      if (!strcmp(command_args.argv[i],"-m"))
+        missing_nodes = atoi(command_args.argv[++i]);
     }
   }
   task_args_t task_arg;
@@ -62,7 +66,7 @@ void top_level_task(const Task *task,
   int mpi_rank, mpi_comm_size;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_comm_size);
-  int num_subregions = nb_threads * mpi_comm_size;
+  int num_subregions = nb_threads * (mpi_comm_size-missing_nodes);
   printf("running top level task on %d node, %d total threads\n", mpi_comm_size, num_subregions);
 #else
   int num_subregions = nb_threads;
@@ -91,6 +95,14 @@ void top_level_task(const Task *task,
     allocator.allocate_field(sizeof(int),FID_Z);
     runtime->attach_name(output_fs, FID_Z, "Z");
   }
+  FieldSpace mapping_fs = runtime->create_field_space(ctx);
+  runtime->attach_name(mapping_fs, "mapping_fs");
+  {
+    FieldAllocator allocator = 
+      runtime->create_field_allocator(ctx, mapping_fs);
+    allocator.allocate_field(sizeof(int),FID_RANK);
+    runtime->attach_name(mapping_fs, FID_RANK, "RANK");
+  }
   LogicalRegion input_lr = runtime->create_logical_region(ctx, is, input_fs);
   runtime->attach_name(input_lr, "input_lr");
   LogicalRegion output_lr = runtime->create_logical_region(ctx, is, output_fs);
@@ -98,6 +110,9 @@ void top_level_task(const Task *task,
 
   Rect<1> color_bounds(0,num_subregions-1);
   IndexSpace color_is = runtime->create_index_space(ctx, color_bounds);
+  
+  LogicalRegion mapping_lr = runtime->create_logical_region(ctx, color_is, mapping_fs);
+  runtime->attach_name(mapping_lr, "mapping_lr");
 
   IndexPartition ip = runtime->create_equal_partition(ctx, is, color_is);
   runtime->attach_name(ip, "ip");
@@ -106,6 +121,11 @@ void top_level_task(const Task *task,
   runtime->attach_name(input_lp, "input_lp");
   LogicalPartition output_lp = runtime->get_logical_partition(ctx, output_lr, ip);
   runtime->attach_name(output_lp, "output_lp");
+
+  IndexPartition mapping_ip = runtime->create_equal_partition(ctx, color_is, color_is);
+  runtime->attach_name(mapping_ip, "mapping_ip");
+  LogicalPartition mapping_lp = runtime->get_logical_partition(ctx, mapping_lr, mapping_ip);
+  runtime->attach_name(mapping_lp, "mapping_lp");
 
   // Create our launch domain.  Note that is the same as color domain
   // as we are going to launch one task for each subregion we created.
@@ -120,6 +140,15 @@ void top_level_task(const Task *task,
     init_launcher.region_requirements[0].add_field(FID_X);
     runtime->execute_index_space(ctx, init_launcher);
   }
+  {
+    IndexLauncher init_mapping_launcher(INIT_MAPPING_TASK_ID, color_is, 
+                                        TaskArgument(NULL, 0), arg_map);
+    init_mapping_launcher.add_region_requirement(
+        RegionRequirement(mapping_lp, 0/*projection ID*/, 
+                          WRITE_DISCARD, EXCLUSIVE, mapping_lr));
+    init_mapping_launcher.region_requirements[0].add_field(FID_RANK);
+    runtime->execute_index_space(ctx, init_mapping_launcher);
+  }
 
   {
     IndexLauncher daxpy_launcher(ALLTOALL_TASK_ID, color_is,
@@ -132,6 +161,10 @@ void top_level_task(const Task *task,
         RegionRequirement(output_lp, 0/*projection ID*/,
                           WRITE_DISCARD, EXCLUSIVE, output_lr));
     daxpy_launcher.region_requirements[1].add_field(FID_Z);
+    daxpy_launcher.add_region_requirement(
+        RegionRequirement(mapping_lr, 0/*projection ID*/,
+                          READ_ONLY, EXCLUSIVE, mapping_lr));
+    daxpy_launcher.region_requirements[2].add_field(FID_RANK);
     runtime->execute_index_space(ctx, daxpy_launcher);
   }
                     
@@ -187,12 +220,46 @@ void init_field_task(const Task *task,
   }
 }
 
+void init_mapping_task(const Task *task,
+                     const std::vector<PhysicalRegion> &regions,
+                     Context ctx, Runtime *runtime)
+{
+  assert(regions.size() == 1); 
+  assert(task->regions.size() == 1);
+  assert(task->regions[0].privilege_fields.size() == 1);
+
+  FieldID fid = *(task->regions[0].privilege_fields.begin());
+  const int point = task->index_point.point_data[0];
+
+  const FieldAccessor<WRITE_DISCARD,int,1,coord_t,
+        Realm::AffineAccessor<int,1,coord_t> > acc(regions[0], fid);
+  // Note here that we get the domain for the subregion for
+  // this task from the runtime which makes it safe for running
+  // both as a single task and as part of an index space of tasks.
+  Rect<1> rect = runtime->get_index_space_domain(ctx,
+                  task->regions[0].region.get_index_space());
+  int* ptr = acc.ptr(rect.lo);
+  //printf("Initializing field %d for block %d, buf %p, pid " IDFMT "\n", fid, point, ptr, task->current_proc.id);
+
+  assert(rect.volume() == 1);
+
+  int mpi_rank = 0;
+#if defined (COLL_USE_MPI)
+  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+#endif
+  ptr[0] = mpi_rank;
+
+  // for (size_t i = 0; i < rect.volume(); i++) {
+  //   ptr[i] = i;
+  // }
+}
+
 void alltoall_task(const Task *task,
                    const std::vector<PhysicalRegion> &regions,
                    Context ctx, Runtime *runtime)
 {
-  assert(regions.size() == 2);
-  assert(task->regions.size() == 2);
+  assert(regions.size() == 3);
+  assert(task->regions.size() == 3);
   const int point = task->index_point.point_data[0];
   const task_args_t task_arg = *((const task_args_t*)task->args);
 
@@ -200,14 +267,20 @@ void alltoall_task(const Task *task,
           Realm::AffineAccessor<int,1,coord_t> > sendacc(regions[0], FID_X);
   const FieldAccessor<WRITE_DISCARD,int,1,coord_t,
           Realm::AffineAccessor<int,1,coord_t> > recvacc(regions[1], FID_Z);
-
-  printf("Running coll for point %d pid " IDFMT "\n", 
-          point, task->current_proc.id);
+  const FieldAccessor<READ_ONLY,int,1,coord_t,
+        Realm::AffineAccessor<int,1,coord_t> > mappingacc(regions[2], FID_RANK);
 
   Rect<1> rect = runtime->get_index_space_domain(ctx,
                   task->regions[0].region.get_index_space());
   const int *sendbuf = sendacc.ptr(rect.lo);
   int *recvbuf = recvacc.ptr(rect.lo);
+
+  Rect<1> rect_mapping = runtime->get_index_space_domain(ctx,
+                  task->regions[2].region.get_index_space());
+  const int *mapping_ptr = mappingacc.ptr(rect_mapping.lo);
+
+  printf("Running coll for point %d pid " IDFMT ", size %ld, index size %ld, mapping size %ld\n", 
+      point, task->current_proc.id, rect.volume(), task->index_domain.get_volume(), rect_mapping.volume());
 
   // printf("send %p, recv %p\n", sendbuf, recvbuf);
 
@@ -227,6 +300,18 @@ void alltoall_task(const Task *task,
   global_comm.nb_threads = task_arg.nb_threads;
   global_comm.tid = point % task_arg.nb_threads;
   global_comm.global_rank = point;
+  global_comm.global_comm_size = task->index_domain.get_volume();
+
+  assert(mapping_ptr[point] == global_comm.mpi_rank);
+  assert(global_comm.global_comm_size == rect_mapping.volume());
+
+  global_comm.mapping_table.global_rank = (int *)malloc(sizeof(int) * global_comm.global_comm_size);
+  global_comm.mapping_table.mpi_rank = (int *)malloc(sizeof(int) * global_comm.global_comm_size);
+  for (size_t i = 0; i < rect_mapping.volume(); i++) {
+    // global_comm.mapping_table.mpi_rank[i] = mapping_ptr[i];
+    global_comm.mapping_table.global_rank[i] = i;
+  }
+  memcpy(global_comm.mapping_table.mpi_rank, mapping_ptr, sizeof(int) * rect_mapping.volume());
 
   Coll_Allgather((void*)sendbuf, task_arg.sendcount, collInt, 
                  (void*)recvbuf, task_arg.sendcount, collInt,
@@ -252,6 +337,11 @@ void check_task(const Task *task,
 
   const int *recvbuf = recvacc.ptr(rect.lo);
 
+  // printf("Point %d ", point);
+  // for (int i = 0; i < (int)rect.volume(); i++) {
+  //   printf("%d ", recvbuf[i]);
+  // }
+  // printf("\n");
   for (int i = 0; i < (int)rect.volume(); i++) {
     if (recvbuf[i] != i) {
       printf("point %d, i %d, val %d, expect %d\n", 
@@ -260,19 +350,7 @@ void check_task(const Task *task,
     }
   }
   printf("Point %d SUCCESS!\n", point);
-  // bool all_passed = true;
-  // for (PointInRectIterator<1> pir(rect); pir(); pir++)
-  // {
-  //   int received = acc_z[*pir];
-  //   printf("%d ", received);
-  //   // if (expected != received)
-  //   //   all_passed = false;
-  // }
-  // printf("\n");
-  // if (all_passed)
-  //   printf("SUCCESS!\n");
-  // else
-  //   printf("FAILURE!\n");
+
 }
 
 int main(int argc, char **argv)
@@ -297,6 +375,13 @@ int main(int argc, char **argv)
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     registrar.set_leaf();
     Runtime::preregister_task_variant<init_field_task>(registrar, "init_field");
+  }
+
+  {
+    TaskVariantRegistrar registrar(INIT_MAPPING_TASK_ID, "init_mapping");
+    registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
+    registrar.set_leaf();
+    Runtime::preregister_task_variant<init_mapping_task>(registrar, "init_mapping");
   }
 
   {

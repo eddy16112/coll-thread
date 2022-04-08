@@ -27,6 +27,11 @@ extern MPI_Datatype collChar;
 extern MPI_Datatype collInt;
 extern MPI_Datatype collFloat;
 extern MPI_Datatype collDouble;
+
+typedef struct mapping_table_s {
+  int *mpi_rank; // just for verification
+  int *global_rank;
+} mapping_table_t;
 #else // NCCL and local
 typedef enum { 
   collChar       = 0,
@@ -45,6 +50,7 @@ typedef enum {
 typedef struct Coll_Comm_s {
 #if defined (COLL_USE_MPI)
   MPI_Comm comm;
+  mapping_table_t mapping_table;
 #else
   volatile local_buffer_t *local_buffer;
 #endif
@@ -56,6 +62,10 @@ typedef struct Coll_Comm_s {
   int global_comm_size;
   int starting_tag;
 } Coll_Comm;
+
+int Coll_Create_comm(Coll_Comm *global_comm, int global_comm_size, int global_rank, const int *mapping_table);
+
+int Coll_Comm_free (Coll_Comm *global_comm);
 
 int Coll_Alltoall(void *sendbuf, int sendcount, collDataType_t sendtype, 
                   void *recvbuf, int recvcount, collDataType_t recvtype, 
