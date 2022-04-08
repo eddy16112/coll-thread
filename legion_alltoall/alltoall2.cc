@@ -43,8 +43,8 @@ typedef struct task_args_s{
   int sendcount;
 } task_args_t;
 
-#define COLL_DTYPE collDouble
-typedef double DTYPE;
+#define COLL_DTYPE collInt
+typedef int DTYPE;
 
 void top_level_task(const Task *task,
                     const std::vector<PhysicalRegion> &regions,
@@ -73,6 +73,7 @@ void top_level_task(const Task *task,
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_comm_size);
   int num_subregions = nb_threads * (mpi_comm_size-missing_nodes);
+  //int num_subregions = nb_threads * mpi_comm_size -missing_nodes;
   printf("running top level task on %d node, %d total threads, sendcount %d\n", mpi_comm_size, num_subregions, sendcount);
 #else
   int num_subregions = nb_threads;

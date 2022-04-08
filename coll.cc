@@ -78,12 +78,12 @@ int Coll_Alltoall(void *sendbuf, int sendcount, collDataType_t sendtype,
                   Coll_Comm global_comm)
 {
 #if defined(COLL_USE_MPI)
-  printf("MPI: Thread %d, total_size %d\n", global_comm.tid, global_comm.mpi_comm_size * global_comm.nb_threads);
+  printf("MPI: global_rank %d, total_size %d\n", global_comm.global_rank, global_comm.global_comm_size);
   return Coll_Alltoall_thread(sendbuf, sendcount, sendtype, 
                               recvbuf, recvcount, recvtype,
                               global_comm);
 #else
-  printf("Local: Thread %d, total_size %d, send_buf %p\n", global_comm.tid, global_comm.mpi_comm_size * global_comm.nb_threads, sendbuf);
+  printf("Local: global_rank %d, total_size %d, send_buf %p\n", global_comm.global_rank, global_comm.global_comm_size, sendbuf);
   return Coll_Alltoall_local(sendbuf, sendcount, sendtype, 
                              recvbuf, recvcount, recvtype,
                              global_comm);
@@ -96,13 +96,13 @@ int Coll_Gather(void *sendbuf, int sendcount, collDataType_t sendtype,
                 Coll_Comm global_comm)
 {
 #if defined(COLL_USE_MPI)
-  printf("MPI: Thread %d, total_size %d\n", global_comm.tid, global_comm.mpi_comm_size * global_comm.nb_threads);
+  printf("MPI: global_rank %d, total_size %d\n", global_comm.global_rank, global_comm.global_comm_size);
   return Coll_Gather_thread(sendbuf, sendcount, sendtype, 
                             recvbuf, recvcount, recvtype,
                             root,
                             global_comm);
 #else
-  printf("Local: Thread %d, total_size %d, send_buf %p\n", global_comm.tid, global_comm.mpi_comm_size * global_comm.nb_threads, sendbuf);
+  printf("Local: global_rank %d, total_size %d, send_buf %p\n", global_comm.global_rank, global_comm.global_comm_size, sendbuf);
   assert(0);
 #endif  
 }
@@ -112,12 +112,12 @@ int Coll_Allgather(void *sendbuf, int sendcount, collDataType_t sendtype,
                    Coll_Comm global_comm)
 {
 #if defined(COLL_USE_MPI)
-  printf("MPI: Thread %d, total_size %d\n", global_comm.tid, global_comm.mpi_comm_size * global_comm.nb_threads);
+  printf("MPI: global_rank %d, total_size %d\n", global_comm.global_rank, global_comm.global_comm_size);
   return Coll_Allgather_thread(sendbuf, sendcount, sendtype, 
                                recvbuf, recvcount, recvtype,
                                global_comm);
 #else
-  printf("Local: Thread %d, total_size %d, send_buf %p\n", global_comm.tid, global_comm.mpi_comm_size * global_comm.nb_threads, sendbuf);
+  printf("Local: global_rank %d, total_size %d, send_buf %p\n", global_comm.global_rank, global_comm.global_comm_size, sendbuf);
   return Coll_Allgather_local(sendbuf, sendcount, sendtype, 
                               recvbuf, recvcount, recvtype,
                               global_comm);
@@ -129,12 +129,12 @@ int Coll_Bcast(void *buf, int count, collDataType_t type,
                Coll_Comm global_comm)
 {
 #if defined(COLL_USE_MPI)
-  printf("MPI: Thread %d, total_size %d\n", global_comm.tid, global_comm.mpi_comm_size * global_comm.nb_threads);
+  printf("MPI: global_rank %d, total_size %d\n", global_comm.global_rank, global_comm.mpi_comm_size * global_comm.nb_threads);
   return Coll_Bcast(buf, count, type, 
                     root,
                     global_comm);
 #else
-  printf("Local: Thread %d, total_size %d, send_buf %p\n", global_comm.tid, global_comm.mpi_comm_size * global_comm.nb_threads, buf);
+  printf("Local: global_rank %d, total_size %d, send_buf %p\n", global_comm.global_rank, global_comm.mpi_comm_size * global_comm.nb_threads, buf);
   assert(0);
 #endif 
 }
