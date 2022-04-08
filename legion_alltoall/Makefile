@@ -32,7 +32,7 @@ USE_CYCLIC_MAPPING ?= 0
 OUTFILE		?= alltoall 
 # List all the application source files here
 ifeq ($(strip $(USE_GASNET)),1)
-GEN_SRC		?= alltoall.cc	\
+GEN_SRC		?= alltoall2.cc	\
 			   ../coll.cc \
 			   ../alltoall_thread_mpi.cc \
 			   ../allgather_thread_mpi.cc \
