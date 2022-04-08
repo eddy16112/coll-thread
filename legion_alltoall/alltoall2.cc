@@ -43,6 +43,9 @@ typedef struct task_args_s{
   int sendcount;
 } task_args_t;
 
+#define COLL_DTYPE collDouble
+typedef double DTYPE;
+
 void top_level_task(const Task *task,
                     const std::vector<PhysicalRegion> &regions,
                     Context ctx, Runtime *runtime)
@@ -87,7 +90,7 @@ void top_level_task(const Task *task,
   {
     FieldAllocator allocator = 
       runtime->create_field_allocator(ctx, input_fs);
-    allocator.allocate_field(sizeof(int),FID_X);
+    allocator.allocate_field(sizeof(DTYPE),FID_X);
     runtime->attach_name(input_fs, FID_X, "X");
   }
   FieldSpace output_fs = runtime->create_field_space(ctx);
@@ -95,7 +98,7 @@ void top_level_task(const Task *task,
   {
     FieldAllocator allocator = 
       runtime->create_field_allocator(ctx, output_fs);
-    allocator.allocate_field(sizeof(int),FID_Z);
+    allocator.allocate_field(sizeof(DTYPE),FID_Z);
     runtime->attach_name(output_fs, FID_Z, "Z");
   }
   FieldSpace mapping_fs = runtime->create_field_space(ctx);
@@ -232,14 +235,14 @@ void init_field_task(const Task *task,
   FieldID fid = *(task->regions[0].privilege_fields.begin());
   const int point = task->index_point.point_data[0];
 
-  const FieldAccessor<WRITE_DISCARD,int,1,coord_t,
-        Realm::AffineAccessor<int,1,coord_t> > acc(regions[0], fid);
+  const FieldAccessor<WRITE_DISCARD,DTYPE,1,coord_t,
+        Realm::AffineAccessor<DTYPE,1,coord_t> > acc(regions[0], fid);
   // Note here that we get the domain for the subregion for
   // this task from the runtime which makes it safe for running
   // both as a single task and as part of an index space of tasks.
   Rect<1> rect = runtime->get_index_space_domain(ctx,
                   task->regions[0].region.get_index_space());
-  int* ptr = acc.ptr(rect.lo);
+  DTYPE* ptr = acc.ptr(rect.lo);
   //printf("Initializing field %d for block %d, size %ld, pid " IDFMT "\n", fid, point, rect.volume(), task->current_proc.id);
 
   for (size_t i = 0; i < rect.volume(); i++) {
@@ -298,17 +301,17 @@ void alltoall_task(const Task *task,
   const task_args_t task_arg = *((const task_args_t*)task->args);
   Coll_Comm *global_comm = task->futures[0].get_result<Coll_Comm*>();
 
-  const FieldAccessor<READ_ONLY,int,1,coord_t,
-          Realm::AffineAccessor<int,1,coord_t> > sendacc(regions[0], FID_X);
-  const FieldAccessor<WRITE_DISCARD,int,1,coord_t,
-          Realm::AffineAccessor<int,1,coord_t> > recvacc(regions[1], FID_Z);
+  const FieldAccessor<READ_ONLY,DTYPE,1,coord_t,
+          Realm::AffineAccessor<DTYPE,1,coord_t> > sendacc(regions[0], FID_X);
+  const FieldAccessor<WRITE_DISCARD,DTYPE,1,coord_t,
+          Realm::AffineAccessor<DTYPE,1,coord_t> > recvacc(regions[1], FID_Z);
   // const FieldAccessor<READ_ONLY,int,1,coord_t,
   //         Realm::AffineAccessor<int,1,coord_t> > mappingacc(regions[2], FID_RANK);
 
   Rect<1> rect = runtime->get_index_space_domain(ctx,
                   task->regions[0].region.get_index_space());
-  const int *sendbuf = sendacc.ptr(rect.lo);
-  int *recvbuf = recvacc.ptr(rect.lo);
+  const DTYPE *sendbuf = sendacc.ptr(rect.lo);
+  DTYPE *recvbuf = recvacc.ptr(rect.lo);
 
   // Rect<1> rect_mapping = runtime->get_index_space_domain(ctx,
   //                 task->regions[2].region.get_index_space());
@@ -339,8 +342,8 @@ void alltoall_task(const Task *task,
 //   assert(mapping_ptr[point] == global_comm.mpi_rank);
 //   assert(global_comm_size == rect_mapping.volume());
 
-  Coll_Alltoall((void*)sendbuf, task_arg.sendcount, collInt, 
-                (void*)recvbuf, task_arg.sendcount, collInt,
+  Coll_Alltoall((void*)sendbuf, task_arg.sendcount, COLL_DTYPE, 
+                (void*)recvbuf, task_arg.sendcount, COLL_DTYPE,
                 *global_comm);
   printf("Point %d, Alltoall Done\n", point);
 }
@@ -370,13 +373,13 @@ void check_task(const Task *task,
   const int point = task->index_point.point_data[0];
   const task_args_t task_arg = *((const task_args_t*)task->args);
 
-  const FieldAccessor<READ_ONLY,int,1,coord_t,
-        Realm::AffineAccessor<int,1,coord_t> > recvacc(regions[0], FID_Z);
+  const FieldAccessor<READ_ONLY,DTYPE,1,coord_t,
+        Realm::AffineAccessor<DTYPE,1,coord_t> > recvacc(regions[0], FID_Z);
 
   Rect<1> rect = runtime->get_index_space_domain(ctx,
                   task->regions[0].region.get_index_space());
 
-  const int *recvbuf = recvacc.ptr(rect.lo);
+  const DTYPE *recvbuf = recvacc.ptr(rect.lo);
 
   int mpi_rank = 0;
 #if defined (COLL_USE_MPI)
@@ -389,9 +392,9 @@ void check_task(const Task *task,
   int start_value = global_rank * task_arg.sendcount;
   for (size_t i = 0; i < rect.volume(); i+= task_arg.sendcount) {
     for (int j = 0; j < task_arg.sendcount; j++) {
-      if (recvbuf[i+j] != start_value + j) {
+      if (recvbuf[i+j] != (DTYPE)(start_value + j)) {
         printf("point %d, tid %d, i %ld j %d, val %d, expect %d\n", 
-               point, tid, i, j, recvbuf[i+j], start_value + j);
+               point, tid, i, j, (int)recvbuf[i+j], start_value + j);
         assert(0);
       }
     }
