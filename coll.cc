@@ -35,6 +35,7 @@ int Coll_Create_comm(Coll_Comm *global_comm, int global_comm_size, int global_ra
   global_comm->global_comm_size = global_comm_size;
   global_comm->global_rank = global_rank;
   global_comm->starting_tag = 0;
+  global_comm->status = true;
 #if defined(COLL_USE_MPI)
   int mpi_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
@@ -61,11 +62,14 @@ int Coll_Comm_free (Coll_Comm *global_comm)
 #if defined(COLL_USE_MPI)
   if (global_comm->mapping_table.global_rank != NULL) {
     free(global_comm->mapping_table.global_rank);
+    global_comm->mapping_table.global_rank = NULL;
   }
   if (global_comm->mapping_table.mpi_rank != NULL) {
     free(global_comm->mapping_table.mpi_rank);
+    global_comm->mapping_table.mpi_rank = NULL;
   }
 #endif
+  global_comm->status = false;
   return 0;
 }
 

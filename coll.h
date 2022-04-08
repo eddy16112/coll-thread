@@ -54,13 +54,14 @@ typedef struct Coll_Comm_s {
 #else
   volatile local_buffer_t *local_buffer;
 #endif
-  int mpi_comm_size;
-  int nb_threads;
+  int mpi_comm_size; // not used
+  int nb_threads; // not used
   int mpi_rank;
-  int tid;
+  int tid; // not used
   int global_rank;
   int global_comm_size;
   int starting_tag;
+  bool status;
 } Coll_Comm;
 
 int Coll_Create_comm(Coll_Comm *global_comm, int global_comm_size, int global_rank, const int *mapping_table);

@@ -28,6 +28,8 @@ enum TaskIDs {
   ALLTOALL_TASK_ID,
   CHECK_TASK_ID,
   INIT_MAPPING_TASK_ID,
+  INIT_COMM_CPU_TASK_ID,
+  FINALIZE_COMM_CPU_TASK_ID,
 };
 
 enum FieldIDs {
@@ -149,22 +151,28 @@ void top_level_task(const Task *task,
     init_mapping_launcher.region_requirements[0].add_field(FID_RANK);
     runtime->execute_index_space(ctx, init_mapping_launcher);
   }
+
+  IndexLauncher init_comm_cpu_launcher(INIT_COMM_CPU_TASK_ID, color_is, 
+                                      TaskArgument(NULL, 0), arg_map);
+  init_comm_cpu_launcher.add_region_requirement(
+      RegionRequirement(mapping_lr, 0/*projection ID*/, 
+                        READ_ONLY, EXCLUSIVE, mapping_lr));
+  init_comm_cpu_launcher.region_requirements[0].add_field(FID_RANK);
+  FutureMap comm_future_map = runtime->execute_index_space(ctx, init_comm_cpu_launcher);
+
   {
-    IndexLauncher daxpy_launcher(ALLTOALL_TASK_ID, color_is,
-                                TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
-    daxpy_launcher.add_region_requirement(
+    IndexLauncher alltoall_launcher(ALLTOALL_TASK_ID, color_is,
+                                    TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
+    alltoall_launcher.point_futures.push_back(ArgumentMap(comm_future_map));
+    alltoall_launcher.add_region_requirement(
         RegionRequirement(input_lp, 0/*projection ID*/,
                           READ_ONLY, EXCLUSIVE, input_lr));
-    daxpy_launcher.region_requirements[0].add_field(FID_X);
-    daxpy_launcher.add_region_requirement(
+    alltoall_launcher.region_requirements[0].add_field(FID_X);
+    alltoall_launcher.add_region_requirement(
         RegionRequirement(output_lp, 0/*projection ID*/,
                           WRITE_DISCARD, EXCLUSIVE, output_lr));
-    daxpy_launcher.region_requirements[1].add_field(FID_Z);
-    daxpy_launcher.add_region_requirement(
-        RegionRequirement(mapping_lr, 0/*projection ID*/,
-                          READ_ONLY, EXCLUSIVE, mapping_lr));
-    daxpy_launcher.region_requirements[2].add_field(FID_RANK);
-    runtime->execute_index_space(ctx, daxpy_launcher);
+    alltoall_launcher.region_requirements[1].add_field(FID_Z);
+    runtime->execute_index_space(ctx, alltoall_launcher);
   }
   // {
   //   IndexLauncher init_launcher(INIT_FIELD_TASK_ID, color_is, 
@@ -176,17 +184,18 @@ void top_level_task(const Task *task,
   //   runtime->execute_index_space(ctx, init_launcher);
   // }
   // {
-  //   IndexLauncher daxpy_launcher(ALLTOALL_TASK_ID, color_is,
-  //                               TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
-  //   daxpy_launcher.add_region_requirement(
+  //   IndexLauncher alltoall_launcher(ALLTOALL_TASK_ID, color_is,
+  //                                   TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
+  //   alltoall_launcher.point_futures.push_back(ArgumentMap(comm_future_map));
+  //   alltoall_launcher.add_region_requirement(
   //       RegionRequirement(input_lp, 0/*projection ID*/,
   //                         READ_ONLY, EXCLUSIVE, input_lr));
-  //   daxpy_launcher.region_requirements[0].add_field(FID_X);
-  //   daxpy_launcher.add_region_requirement(
+  //   alltoall_launcher.region_requirements[0].add_field(FID_X);
+  //   alltoall_launcher.add_region_requirement(
   //       RegionRequirement(output_lp, 0/*projection ID*/,
   //                         WRITE_DISCARD, EXCLUSIVE, output_lr));
-  //   daxpy_launcher.region_requirements[1].add_field(FID_Z);
-  //   runtime->execute_index_space(ctx, daxpy_launcher);
+  //   alltoall_launcher.region_requirements[1].add_field(FID_Z);
+  //   runtime->execute_index_space(ctx, alltoall_launcher);
   // }
                     
   IndexLauncher check_launcher(CHECK_TASK_ID, color_is,
@@ -196,6 +205,15 @@ void top_level_task(const Task *task,
                         READ_ONLY, EXCLUSIVE, output_lr));
   check_launcher.region_requirements[0].add_field(FID_Z);
   runtime->execute_index_space(ctx, check_launcher);
+
+  runtime->issue_execution_fence(ctx);
+  {
+    IndexLauncher finalize_comm_cpu_launcher(FINALIZE_COMM_CPU_TASK_ID, color_is, 
+                                             TaskArgument(NULL, 0), arg_map);
+    finalize_comm_cpu_launcher.point_futures.push_back(ArgumentMap(comm_future_map));
+    runtime->execute_index_space(ctx, finalize_comm_cpu_launcher);
+  }
+
 
   runtime->destroy_logical_region(ctx, input_lr);
   runtime->destroy_logical_region(ctx, output_lr);
@@ -265,33 +283,72 @@ void init_mapping_task(const Task *task,
   // }
 }
 
+Coll_Comm* init_comm_cpu_task(const Task *task,
+                        const std::vector<PhysicalRegion> &regions,
+                        Context ctx, Runtime *runtime)
+{
+  assert(regions.size() == 1);
+  assert(task->regions.size() == 1);
+  const int point = task->index_point.point_data[0];
+
+  const FieldAccessor<READ_ONLY,int,1,coord_t,
+          Realm::AffineAccessor<int,1,coord_t> > mappingacc(regions[0], FID_RANK);
+
+  Rect<1> rect_mapping = runtime->get_index_space_domain(ctx,
+                  task->regions[0].region.get_index_space());
+  const int *mapping_ptr = mappingacc.ptr(rect_mapping.lo);
+
+  printf("Init Comm for point %d pid " IDFMT ", index size %ld, mapping size %ld\n", 
+        point, task->current_proc.id, task->index_domain.get_volume(), rect_mapping.volume());
+
+  // for (size_t i = 0; i < rect_mapping.volume(); i++) {
+  //   printf("%d ", mapping_ptr[i]);
+  // }
+  // printf("\n");
+
+  Coll_Comm *global_comm = (Coll_Comm*)malloc(sizeof(Coll_Comm));
+  int global_rank = point;
+  int global_comm_size = task->index_domain.get_volume();
+
+ #if defined (COLL_USE_MPI)
+  Coll_Create_comm(global_comm, global_comm_size, global_rank, mapping_ptr);
+#else
+  Coll_Create_comm(global_comm, global_comm_size, global_rank, NULL);
+#endif
+
+  assert(mapping_ptr[point] == global_comm->mpi_rank);
+  assert(global_comm_size == rect_mapping.volume());
+  return global_comm;
+}
+
 void alltoall_task(const Task *task,
                    const std::vector<PhysicalRegion> &regions,
                    Context ctx, Runtime *runtime)
 {
-  assert(regions.size() == 3);
-  assert(task->regions.size() == 3);
+  assert(regions.size() == 2);
+  assert(task->regions.size() == 2);
   const int point = task->index_point.point_data[0];
   const task_args_t task_arg = *((const task_args_t*)task->args);
+  Coll_Comm *global_comm = task->futures[0].get_result<Coll_Comm*>();
 
   const FieldAccessor<READ_ONLY,int,1,coord_t,
           Realm::AffineAccessor<int,1,coord_t> > sendacc(regions[0], FID_X);
   const FieldAccessor<WRITE_DISCARD,int,1,coord_t,
           Realm::AffineAccessor<int,1,coord_t> > recvacc(regions[1], FID_Z);
-  const FieldAccessor<READ_ONLY,int,1,coord_t,
-          Realm::AffineAccessor<int,1,coord_t> > mappingacc(regions[2], FID_RANK);
+  // const FieldAccessor<READ_ONLY,int,1,coord_t,
+  //         Realm::AffineAccessor<int,1,coord_t> > mappingacc(regions[2], FID_RANK);
 
   Rect<1> rect = runtime->get_index_space_domain(ctx,
                   task->regions[0].region.get_index_space());
   const int *sendbuf = sendacc.ptr(rect.lo);
   int *recvbuf = recvacc.ptr(rect.lo);
 
-  Rect<1> rect_mapping = runtime->get_index_space_domain(ctx,
-                  task->regions[2].region.get_index_space());
-  const int *mapping_ptr = mappingacc.ptr(rect_mapping.lo);
+  // Rect<1> rect_mapping = runtime->get_index_space_domain(ctx,
+  //                 task->regions[2].region.get_index_space());
+  // const int *mapping_ptr = mappingacc.ptr(rect_mapping.lo);
 
-  printf("Running coll for point %d pid " IDFMT ", size %ld, index size %ld, mapping size %ld\n", 
-        point, task->current_proc.id, rect.volume(), task->index_domain.get_volume(), rect_mapping.volume());
+  printf("Running coll for point %d pid " IDFMT ", size %ld, index size %ld\n", 
+        point, task->current_proc.id, rect.volume(), task->index_domain.get_volume());
 
   // for (size_t i = 0; i < rect_mapping.volume(); i++) {
   //   printf("%d ", mapping_ptr[i]);
@@ -300,24 +357,41 @@ void alltoall_task(const Task *task,
 
   // printf("send %p, recv %p\n", sendbuf, recvbuf);
 
-  Coll_Comm global_comm;
-  int global_rank = point;
-  int global_comm_size = task->index_domain.get_volume();
+  assert(global_comm->global_rank == point);
 
- #if defined (COLL_USE_MPI)
-  Coll_Create_comm(&global_comm, global_comm_size, global_rank, mapping_ptr);
-#else
-  Coll_Create_comm(&global_comm, global_comm_size, global_rank, NULL);
-#endif
+//   Coll_Comm global_comm;
+//   int global_rank = point;
+//   int global_comm_size = task->index_domain.get_volume();
 
-  assert(mapping_ptr[point] == global_comm.mpi_rank);
-  assert(global_comm_size == rect_mapping.volume());
+//  #if defined (COLL_USE_MPI)
+//   Coll_Create_comm(&global_comm, global_comm_size, global_rank, mapping_ptr);
+// #else
+//   Coll_Create_comm(&global_comm, global_comm_size, global_rank, NULL);
+// #endif
+
+//   assert(mapping_ptr[point] == global_comm.mpi_rank);
+//   assert(global_comm_size == rect_mapping.volume());
 
   Coll_Alltoall((void*)sendbuf, task_arg.sendcount, collInt, 
                 (void*)recvbuf, task_arg.sendcount, collInt,
-                global_comm);
+                *global_comm);
   printf("Point %d, Alltoall Done\n", point);
+}
 
+void finalize_comm_cpu_task(const Task *task,
+                            const std::vector<PhysicalRegion> &regions,
+                            Context ctx, Runtime *runtime)
+{
+  const int point = task->index_point.point_data[0];
+  Coll_Comm *global_comm = task->futures[0].get_result<Coll_Comm*>();
+
+  assert(global_comm->global_rank == point);
+  assert(global_comm->status == true);
+  
+  Coll_Comm_free(global_comm);
+  free(global_comm);
+  global_comm = NULL;
+  printf("Point %d, Finalize Done\n", point);
 }
 
 void check_task(const Task *task,
@@ -403,6 +477,13 @@ int main(int argc, char **argv)
   }
 
   {
+    TaskVariantRegistrar registrar(INIT_COMM_CPU_TASK_ID, "init_comm_cpu");
+    registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
+    registrar.set_leaf();
+    Runtime::preregister_task_variant<Coll_Comm*, init_comm_cpu_task>(registrar, "init_comm_cpu");
+  }
+
+  {
     TaskVariantRegistrar registrar(ALLTOALL_TASK_ID, "alltoall");
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     registrar.set_leaf();
@@ -414,6 +495,13 @@ int main(int argc, char **argv)
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     registrar.set_leaf();
     Runtime::preregister_task_variant<check_task>(registrar, "check");
+  }
+
+  {
+    TaskVariantRegistrar registrar(FINALIZE_COMM_CPU_TASK_ID, "finalize_comm_cpu");
+    registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
+    registrar.set_leaf();
+    Runtime::preregister_task_variant<finalize_comm_cpu_task>(registrar, "finalize_comm_cpu");
   }
 
   int val = Runtime::start(argc, argv);
