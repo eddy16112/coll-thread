@@ -14,7 +14,8 @@ int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
 {	
   int res;
 
-  int total_size = global_comm.mpi_comm_size * global_comm.nb_threads;
+  // int total_size = global_comm.mpi_comm_size * global_comm.nb_threads;
+  int total_size = global_comm.global_comm_size;
 	MPI_Status status;
 
   MPI_Aint lb, sendtype_extent, recvtype_extent;
@@ -26,7 +27,7 @@ int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
   assert(global_rank % global_comm.mpi_comm_size == global_comm.mpi_rank);
 #else
   assert(global_rank / global_comm.nb_threads == global_comm.mpi_rank);
-  assert(global_rank == global_comm.mpi_rank * global_comm.nb_threads + global_comm.tid);
+  // assert(global_rank == global_comm.mpi_rank * global_comm.nb_threads + global_comm.tid);
 #endif
 
   void *sendbuf_tmp = NULL;

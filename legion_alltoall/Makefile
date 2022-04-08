@@ -26,7 +26,7 @@ USE_GASNET      ?= 1		# Include GASNet support (requires GASNet)
 USE_HDF         ?= 0		# Include HDF5 support (requires HDF5)
 ALT_MAPPERS     ?= 0		# Include alternative mappers (not recommended)
 
-USE_CYCLIC_MAPPING ?= 1
+USE_CYCLIC_MAPPING ?= 0
 
 # Put the binary file name here
 OUTFILE		?= alltoall 

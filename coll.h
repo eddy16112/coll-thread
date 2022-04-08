@@ -53,6 +53,7 @@ typedef struct Coll_Comm_s {
   int mpi_rank;
   int tid;
   int global_rank;
+  int global_comm_size;
   int starting_tag;
 } Coll_Comm;
 

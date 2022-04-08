@@ -38,13 +38,14 @@ COLL_OBJS	:= $(COLL_SRC:.cc=.cc.o)
 COLL_TEST_SRC	+= alltoall_test.cc \
 						 		 gather_test.cc \
 								 allgather_test.cc \
-								 bcast_test.cc
+								 bcast_test.cc \
+								 alltoall_fake_sub_test.cc
 
 COLL_TEST_OBJS	:= $(COLL_TEST_SRC:.cc=.cc.o)
 
 .PHONY: build clean
 
-OUTFILE := alltoall_test gather_test allgather_test bcast_test
+OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test
 
 build: $(OUTFILE)
 
@@ -67,6 +68,9 @@ allgather_test: $(COLL_OBJS) allgather_test.cc.o
 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
 
 bcast_test: $(COLL_OBJS) bcast_test.cc.o
+	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
+
+alltoall_fake_sub_test: $(COLL_OBJS) alltoall_fake_sub_test.cc.o
 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
 
 # alltoall_thread2: alltoall_thread2.o
