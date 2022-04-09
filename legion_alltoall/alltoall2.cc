@@ -247,9 +247,15 @@ void init_field_task(const Task *task,
   DTYPE* ptr = acc.ptr(rect.lo);
   //printf("Initializing field %d for block %d, size %ld, pid " IDFMT "\n", fid, point, rect.volume(), task->current_proc.id);
 
+#if 0
   for (size_t i = 0; i < rect.volume(); i++) {
-    ptr[i] = i;
+    ptr[i] = (DTYPE)i;
   }
+#else
+  for (size_t i = 0; i < rect.volume(); i++) {
+    ptr[i] = (DTYPE)(point * rect.volume() + i);
+  }
+#endif
 }
 
 int init_mapping_task(const Task *task,
@@ -391,6 +397,7 @@ void check_task(const Task *task,
   //int global_rank = mpi_rank * task_arg.nb_threads + tid;
   int global_rank = point;
 
+#if 0
   int start_value = global_rank * task_arg.sendcount;
   for (size_t i = 0; i < rect.volume(); i+= task_arg.sendcount) {
     for (int j = 0; j < task_arg.sendcount; j++) {
@@ -401,6 +408,20 @@ void check_task(const Task *task,
       }
     }
   }
+#else
+  int ct_x = 0;
+  for (int i = 0; i < rect.volume(); i += task_arg.sendcount) {
+    int start_value = global_rank * task_arg.sendcount + ct_x * rect.volume();
+    for (int j = 0; j < task_arg.sendcount; j++) {
+      if (recvbuf[i+j] != (DTYPE)start_value + j) {
+        printf("point %d, tid %d, i %d j %d, val %d, expect %d\n", 
+               point, tid, i, j, (int)recvbuf[i+j], start_value + j);
+        assert(0);
+      }
+    }
+    ct_x ++;
+  }
+#endif
   printf("Point %d SUCCESS!\n", point);
   // bool all_passed = true;
   // for (PointInRectIterator<1> pir(rect); pir(); pir++)
