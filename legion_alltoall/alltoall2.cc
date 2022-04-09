@@ -161,6 +161,7 @@ void top_level_task(const Task *task,
   IndexLauncher init_comm_cpu_launcher(INIT_COMM_CPU_TASK_ID, color_is, 
                                       TaskArgument(mapping_table, mapping_table_size), arg_map);
   FutureMap comm_future_map = runtime->execute_index_space(ctx, init_comm_cpu_launcher);
+  free(mapping_table);
 
   {
     IndexLauncher alltoall_launcher(ALLTOALL_TASK_ID, color_is,
