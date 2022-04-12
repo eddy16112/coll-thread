@@ -10,19 +10,19 @@
  
 int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
                         void *recvbuf, int recvcount, collDataType_t recvtype, 
-                        Coll_Comm global_comm)
+                        collComm_t global_comm)
 {	
   int res;
 
   // int total_size = global_comm.mpi_comm_size * global_comm.nb_threads;
-  int total_size = global_comm.global_comm_size;
+  int total_size = global_comm->global_comm_size;
 	MPI_Status status;
 
   MPI_Aint lb, sendtype_extent, recvtype_extent;
   MPI_Type_get_extent(sendtype, &lb, &sendtype_extent);
   MPI_Type_get_extent(recvtype, &lb, &recvtype_extent);
  
-  int global_rank = global_comm.global_rank;
+  int global_rank = global_comm->global_rank;
 
   void *sendbuf_tmp = NULL;
 
@@ -43,10 +43,10 @@ int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
     recvfrom_global_rank = (global_rank + total_size - i) % total_size;
     char* src = (char*)sendbuf_tmp + (ptrdiff_t)sendto_global_rank * sendtype_extent * sendcount;
     char* dst = (char*)recvbuf + (ptrdiff_t)recvfrom_global_rank * recvtype_extent * recvcount;
-    sendto_mpi_rank = global_comm.mapping_table.mpi_rank[sendto_global_rank];
-    recvfrom_mpi_rank = global_comm.mapping_table.mpi_rank[recvfrom_global_rank];
-    assert(sendto_global_rank == global_comm.mapping_table.global_rank[sendto_global_rank]);
-    assert(recvfrom_global_rank == global_comm.mapping_table.global_rank[recvfrom_global_rank]);
+    sendto_mpi_rank = global_comm->mapping_table.mpi_rank[sendto_global_rank];
+    recvfrom_mpi_rank = global_comm->mapping_table.mpi_rank[recvfrom_global_rank];
+    assert(sendto_global_rank == global_comm->mapping_table.global_rank[sendto_global_rank]);
+    assert(recvfrom_global_rank == global_comm->mapping_table.global_rank[recvfrom_global_rank]);
     // tag: seg idx + rank_idx
     int send_tag = sendto_global_rank * 10000 + global_rank; // which dst seg it sends to (in dst rank)
     int recv_tag = global_rank * 10000 + recvfrom_global_rank; // idx of current seg we are receving (in src/my rank)
@@ -55,7 +55,7 @@ int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
       i, global_rank, global_comm.mpi_rank, global_comm.tid, 
       sendto_global_rank, sendto_mpi_rank, send_tag, recvfrom_global_rank, recvfrom_mpi_rank, recv_tag);
 #endif
-    res = MPI_Sendrecv(src, sendcount, sendtype, sendto_mpi_rank, send_tag, dst, recvcount, recvtype, recvfrom_mpi_rank, recv_tag, global_comm.comm, &status);
+    res = MPI_Sendrecv(src, sendcount, sendtype, sendto_mpi_rank, send_tag, dst, recvcount, recvtype, recvfrom_mpi_rank, recv_tag, global_comm->comm, &status);
     assert(res == MPI_SUCCESS);
 	}
 #elif defined (ALLTOALL_USE_SENDRECV_OLD)
