@@ -1,5 +1,5 @@
 DEBUG		?= 1
-COLL_NETWORKS	?= mpi
+COLL_NETWORKS	?= local
 
 CC			= mpicxx
 CC_FLAGS	?=
@@ -23,12 +23,14 @@ COLL_SRC	?=
 COLL_SRC	+= coll.cc
 ifeq ($(strip $(COLL_NETWORKS)),mpi)
 COLL_SRC	+= alltoall_thread_mpi.cc \
+						 alltoallv_thread_mpi.cc \
 						 gather_thread_mpi.cc \
 						 allgather_thread_mpi.cc \
 						 bcast_thread_mpi.cc
 endif
 ifeq ($(strip $(COLL_NETWORKS)),local)
 COLL_SRC	+= alltoall_thread_local.cc \
+						 alltoallv_thread_local.cc \
 						 allgather_thread_local.cc
 endif
 
@@ -39,13 +41,14 @@ COLL_TEST_SRC	+= alltoall_test.cc \
 						 		 gather_test.cc \
 								 allgather_test.cc \
 								 bcast_test.cc \
-								 alltoall_fake_sub_test.cc
+								 alltoall_fake_sub_test.cc \
+								 alltoallv_test.cc
 
 COLL_TEST_OBJS	:= $(COLL_TEST_SRC:.cc=.cc.o)
 
 .PHONY: build clean
 
-OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test
+OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test alltoallv_test
 
 build: $(OUTFILE)
 
@@ -71,6 +74,9 @@ bcast_test: $(COLL_OBJS) bcast_test.cc.o
 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
 
 alltoall_fake_sub_test: $(COLL_OBJS) alltoall_fake_sub_test.cc.o
+	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
+
+alltoallv_test: $(COLL_OBJS) alltoallv_test.cc.o
 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
 
 # alltoall_thread2: alltoall_thread2.o
