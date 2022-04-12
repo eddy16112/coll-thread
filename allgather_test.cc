@@ -52,7 +52,7 @@ void *thread_func(void *thread_args)
 
   Coll_Allgather(args->sendbuf, args->sendcount, args->sendtype, 
                  args->recvbuf, args->recvcount, args->recvtype,
-                 global_comm);
+                 &global_comm);
   return NULL;
 }
  

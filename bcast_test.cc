@@ -46,7 +46,7 @@ void *thread_func(void *thread_args)
 #endif
 
   Coll_Bcast(args->buf, args->count, args->type, 
-             args->root, global_comm);
+             args->root, &global_comm);
   return NULL;
 }
  

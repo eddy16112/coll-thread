@@ -6,7 +6,7 @@
 
 #include "coll.h"
 
-#define NTHREADS 16
+#define NTHREADS 4
 #define SEND_COUNT 80
 #define COLL_DTYPE collInt
 typedef int DTYPE;
@@ -67,13 +67,13 @@ void *thread_func(void *thread_args)
   Coll_Create_comm(&global_comm, global_comm_size, global_rank, NULL);
 #endif
 
-  // Coll_Allgather(&seg_size, 1, collInt, 
-  //                recvcount, 1, collInt, 
-  //                global_comm);
+  Coll_Allgather(&seg_size, 1, collInt, 
+                 recvcount, 1, collInt, 
+                 &global_comm);
   
   for (int i = 0; i < global_comm_size; i++) {
-    // assert(recvcount[i] == i + 1); 
-    recvcount[i] = i + 1;
+    assert(recvcount[i] == i + 1); 
+    // recvcount[i] = i + 1;
   }
 
   int total_size = 0;
@@ -109,7 +109,7 @@ void *thread_func(void *thread_args)
                  sdispls, COLL_DTYPE,
                  recvbuf, recvcount,
                  rdispls, COLL_DTYPE, 
-                 global_comm);
+                 &global_comm);
   // if (global_rank == 2) {
   //   for (int i = 0; i < total_size; i++) {
   //     printf("%d ", recvbuf[i]);

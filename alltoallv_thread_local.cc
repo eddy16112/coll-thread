@@ -10,27 +10,27 @@ int Coll_Alltoallv_local(const void *sendbuf, const int sendcounts[],
                          const int sdispls[], collDataType_t sendtype,
                          void *recvbuf, const int recvcounts[],
                          const int rdispls[], collDataType_t recvtype, 
-                         Coll_Comm global_comm)
+                         collComm_t global_comm)
 {	
   int res;
 
   assert(sendtype == recvtype);
 
-  int total_size = global_comm.global_comm_size;
+  int total_size = global_comm->global_comm_size;
 
   int sendtype_extent = get_dtype_size(sendtype);
   int recvtype_extent = get_dtype_size(recvtype);
  
-  int global_rank = global_comm.global_rank;
+  int global_rank = global_comm->global_rank;
 
   if (sendbuf == recvbuf) {
     assert(0);
   }
 
-  global_comm.local_buffer = &local_buffer;
-  global_comm.local_buffer->buffers[global_rank] = (void *)sendbuf;
-  global_comm.local_buffer->displs[global_rank] = (int *)sdispls;
-  global_comm.local_buffer->buffers_ready[global_rank] = true;
+  global_comm->local_buffer = &(local_buffer[global_comm->current_buffer_idx]);
+  global_comm->local_buffer->buffers[global_rank] = (void *)sendbuf;
+  global_comm->local_buffer->displs[global_rank] = (int *)sdispls;
+  global_comm->local_buffer->buffers_ready[global_rank] = true;
   __sync_synchronize();
 
   int recvfrom_global_rank;
@@ -39,9 +39,9 @@ int Coll_Alltoallv_local(const void *sendbuf, const int sendcounts[],
   int *displs = NULL;
 	for(int i = 1 ; i < total_size + 1; i++) {
     recvfrom_global_rank = (global_rank + total_size - i) % total_size;
-    while (global_comm.local_buffer->buffers_ready[recvfrom_global_rank] != true);
-    src_base = global_comm.local_buffer->buffers[recvfrom_global_rank];
-    displs = global_comm.local_buffer->displs[recvfrom_global_rank];
+    while (global_comm->local_buffer->buffers_ready[recvfrom_global_rank] != true);
+    src_base = global_comm->local_buffer->buffers[recvfrom_global_rank];
+    displs = global_comm->local_buffer->displs[recvfrom_global_rank];
     char *src = (char*)src_base + (ptrdiff_t)displs[recvfrom_seg_id] * sendtype_extent;
     char *dst = (char*)recvbuf + (ptrdiff_t)rdispls[recvfrom_global_rank] * recvtype_extent;
 #ifdef DEBUG_PRINT
@@ -51,6 +51,10 @@ int Coll_Alltoallv_local(const void *sendbuf, const int sendcounts[],
 #endif
     memcpy(dst, src, recvcounts[recvfrom_global_rank] * recvtype_extent);
 	}
+
+  __sync_synchronize();
+
+  Coll_Update_buffer(global_comm);
 
   return 0;
 }
