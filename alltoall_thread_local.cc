@@ -22,12 +22,20 @@ int Coll_Alltoall_local(void *sendbuf, int sendcount, collDataType_t sendtype,
  
   int global_rank = global_comm->global_rank;
 
+  void *sendbuf_tmp = NULL;
+
+    // MPI_IN_PLACE
   if (sendbuf == recvbuf) {
-    assert(0);
+    sendbuf_tmp = (void *)malloc(total_size * recvtype_extent * recvcount);
+    memcpy(sendbuf_tmp, recvbuf, total_size * recvtype_extent * recvcount);
+    // int * sendval = (int*)sendbuf_tmp;
+    // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
+  } else {
+    sendbuf_tmp = sendbuf;
   }
 
   global_comm->local_buffer = &(local_buffer[global_comm->current_buffer_idx]);
-  global_comm->local_buffer->buffers[global_rank] = sendbuf;
+  global_comm->local_buffer->buffers[global_rank] = sendbuf_tmp;
   global_comm->local_buffer->buffers_ready[global_rank] = true;
   __sync_synchronize();
 
@@ -46,6 +54,10 @@ int Coll_Alltoall_local(void *sendbuf, int sendcount, collDataType_t sendtype,
 #endif
     memcpy(dst, src, sendcount * sendtype_extent);
 	}
+
+  if (sendbuf == recvbuf) {
+    free(sendbuf_tmp);
+  }
 
   Coll_Update_buffer(global_comm);
   __sync_synchronize();

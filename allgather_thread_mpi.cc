@@ -14,14 +14,26 @@ int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
 {	
   int total_size = global_comm->global_comm_size;
 
+  MPI_Aint lb, sendtype_extent, recvtype_extent;
+  MPI_Type_get_extent(sendtype, &lb, &sendtype_extent);
+ 
+  int global_rank = global_comm->global_rank;
+
+  void *sendbuf_tmp = NULL;
+
   // MPI_IN_PLACE
   if (sendbuf == recvbuf) {
-    assert(0);
+    sendbuf_tmp = (void *)malloc(recvtype_extent * recvcount);
+    memcpy(sendbuf_tmp, recvbuf, recvtype_extent * recvcount);
+    // int * sendval = (int*)sendbuf_tmp;
+    // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
+  } else {
+    sendbuf_tmp = sendbuf;
   }
   
 #ifdef ALLGATHER_USE_BCAST
   global_comm->starting_tag = 0;
-  Coll_Gather_thread(sendbuf, sendcount, sendtype, 
+  Coll_Gather_thread(sendbuf_tmp, sendcount, sendtype, 
                      recvbuf, recvcount, recvtype, 
                      0, global_comm);
 
@@ -38,5 +50,10 @@ int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
                        i, global_comm);
 	}
 #endif
+
+  if (sendbuf == recvbuf) {
+    free(sendbuf_tmp);
+  }
+  
   return 0;
 }
