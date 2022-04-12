@@ -35,6 +35,7 @@ ifeq ($(strip $(USE_GASNET)),1)
 GEN_SRC		?= alltoall2.cc	\
 			   ../coll.cc \
 			   ../alltoall_thread_mpi.cc \
+			   ../alltoallv_thread_mpi.cc \
 			   ../allgather_thread_mpi.cc \
 			   ../gather_thread_mpi.cc \
 			   ../bcast_thread_mpi.cc
@@ -42,6 +43,7 @@ else
 GEN_SRC		?= alltoall.cc	\
 			   ../coll.cc \
 			   ../alltoall_thread_local.cc	\
+			   ../alltoallv_thread_local.cc	\
 			   ../allgather_thread_local.cc
 endif
 GEN_GPU_SRC	?=				# .cu files

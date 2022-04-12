@@ -374,7 +374,7 @@ void alltoall_task(const Task *task,
 
   Coll_Alltoall((void*)sendbuf, task_arg.sendcount, collInt, 
                 (void*)recvbuf, task_arg.sendcount, collInt,
-                *global_comm);
+                global_comm);
   printf("Point %d, Alltoall Done\n", point);
 }
 

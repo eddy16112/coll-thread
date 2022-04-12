@@ -336,7 +336,7 @@ void alltoall_task(const Task *task,
 
   Coll_Allgather((void*)sendbuf, task_arg.sendcount, collInt, 
                  (void*)recvbuf, task_arg.sendcount, collInt,
-                 *global_comm);
+                 global_comm);
   printf("Point %d, Allgather Done\n", point);
 
 }
