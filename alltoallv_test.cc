@@ -6,7 +6,7 @@
 
 #include "coll.h"
 
-#define NTHREADS 16
+#define NTHREADS 4
 #define SEND_COUNT 80
 #define COLL_DTYPE collInt
 typedef int DTYPE;
@@ -37,12 +37,6 @@ void *thread_func(void *thread_args)
   DTYPE **sendbufs, **recvbufs;
   int *sendcount, *recvcount;
   int *sdispls, *rdispls;
-
-  int seg_size = global_rank + 1;
-  sendbuf = (DTYPE *)malloc(sizeof(DTYPE) * seg_size * global_comm_size);
-  for (int i = 0; i < seg_size * global_comm_size; i++) {
-    sendbuf[i] = global_rank;
-  }
   
   sendbufs = (DTYPE **)malloc(sizeof(DTYPE*) * global_comm_size);
   recvbufs = (DTYPE **)malloc(sizeof(DTYPE*) * global_comm_size);
@@ -51,13 +45,7 @@ void *thread_func(void *thread_args)
   sdispls = (int *)malloc(sizeof(int) * global_comm_size);
   rdispls = (int *)malloc(sizeof(int) * global_comm_size);
 
-  for (int i = 0; i < global_comm_size; i++) {
-    sendbufs[i] = sendbuf + i * seg_size;
-    sendcount[i] = seg_size;
-    sdispls[i] = i * seg_size;
-  }
-
-#if defined (COLL_USE_MPI)
+  #if defined (COLL_USE_MPI)
   int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
@@ -66,6 +54,62 @@ void *thread_func(void *thread_args)
 #else
   Coll_Create_comm(&global_comm, global_comm_size, global_rank, NULL);
 #endif
+
+#if 0
+  int total_size = 0;
+  for (int i = 0; i < global_comm_size; i++) {
+    total_size += (i+1);
+  }
+  sendbuf = (DTYPE *)malloc(sizeof(DTYPE) * total_size);
+  for (int i = 0; i < total_size; i++) {
+    sendbuf[i] = global_rank;
+  }
+  int soffset = 0;
+  for (int i = 0; i < global_comm_size; i++) {
+    sdispls[i] = soffset;
+    soffset += i+1;
+    sendcount[i] = i + 1;
+  }
+
+  if (global_rank == 0) {
+    for (int i = 0; i < global_comm_size; i++) {
+      printf("%d ", sdispls[i]);
+    }
+    printf("\n");
+  }
+
+  int seg_size = global_rank + 1;
+  recvbuf = (DTYPE *)malloc(sizeof(DTYPE) * seg_size * global_comm_size);
+  for (int i = 0; i < global_comm_size; i++) {
+    recvcount[i] = seg_size;
+    rdispls[i] = i * seg_size;
+  }
+
+  Coll_Alltoallv(sendbuf, sendcount,
+                sdispls, COLL_DTYPE,
+                recvbuf, recvcount,
+                rdispls, COLL_DTYPE, 
+                &global_comm);
+  
+  if (global_rank == 2) {
+    for (int i = 0; i < seg_size * global_comm_size; i++) {
+      printf("%d ", recvbuf[i]);
+    }
+    printf("\n");
+  }
+#else
+
+  int seg_size = global_rank + 1;
+  sendbuf = (DTYPE *)malloc(sizeof(DTYPE) * seg_size * global_comm_size);
+  for (int i = 0; i < seg_size * global_comm_size; i++) {
+    sendbuf[i] = global_rank;
+  }
+
+  for (int i = 0; i < global_comm_size; i++) {
+    sendbufs[i] = sendbuf + i * seg_size;
+    sendcount[i] = seg_size;
+    sdispls[i] = i * seg_size;
+  }
 
   Coll_Allgather(&seg_size, 1, collInt, 
                  recvcount, 1, collInt, 
@@ -125,6 +169,8 @@ void *thread_func(void *thread_args)
       }
     }
   }
+#endif
+
   return NULL;
 }
  
