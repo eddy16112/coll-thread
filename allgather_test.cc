@@ -75,6 +75,10 @@ int main( int argc, char *argv[] )
   // sleep(10);
 #endif
 
+#ifndef COLL_USE_MPI 
+  Coll_init_local(NTHREADS);
+#endif
+
   size_t N = mpi_comm_size * SEND_COUNT * NTHREADS;
 
   DTYPE **send_buffs, **recv_buffs;
@@ -166,6 +170,10 @@ int main( int argc, char *argv[] )
 
   free(send_buffs);
   free(recv_buffs);
+
+#ifndef COLL_USE_MPI 
+  Coll_finalize_local();
+#endif
  
 #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
   MPI_Finalize();

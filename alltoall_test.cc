@@ -13,8 +13,6 @@ typedef int DTYPE;
 
 #define VERIFICATION_2
 
-pthread_barrier_t barrier;
-
 typedef struct thread_args_s {
   int mpi_comm_size;
   int nb_threads;
@@ -106,14 +104,16 @@ int main( int argc, char *argv[] )
     recv_buffs[i] = b;
   }
  
- #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
+#if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
   MPI_Barrier(mpi_comm);
+#endif
+
+#ifndef COLL_USE_MPI 
+  Coll_init_local(NTHREADS);
 #endif
 
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
-
-  pthread_barrier_init(&barrier, NULL, NTHREADS);
 
   for (int i = 0; i < NTHREADS; i++) {
     args[i].mpi_rank = mpi_rank;
@@ -137,7 +137,6 @@ int main( int argc, char *argv[] )
   for(int i = 0; i < NTHREADS; i++) {
       pthread_join( thread_id[i], NULL); 
   }
-  pthread_barrier_destroy(&barrier);
 
  #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
 	MPI_Barrier(mpi_comm);
@@ -187,6 +186,10 @@ int main( int argc, char *argv[] )
 
   free(send_buffs);
   free(recv_buffs);
+
+#ifndef COLL_USE_MPI 
+  Coll_finalize_local();
+#endif
  
 #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
   MPI_Finalize();

@@ -23,12 +23,21 @@ int Coll_Alltoallv_local(const void *sendbuf, const int sendcounts[],
  
   int global_rank = global_comm->global_rank;
 
+  void *sendbuf_tmp = NULL;
+
+  // MPI_IN_PLACE
   if (sendbuf == recvbuf) {
-    assert(0);
+    int total_send_count = sdispls[total_size-1] + sendcounts[total_size-1];
+    sendbuf_tmp = (void *)malloc(sendtype_extent * total_send_count);
+    memcpy(sendbuf_tmp, recvbuf, sendtype_extent * total_send_count);
+    // int * sendval = (int*)sendbuf_tmp;
+    // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, sendtype_extent * total_send_count, sendval[0]);
+  } else {
+    sendbuf_tmp = (void*)sendbuf;
   }
 
   global_comm->local_buffer = &(local_buffer[global_comm->current_buffer_idx]);
-  global_comm->local_buffer->buffers[global_rank] = (void *)sendbuf;
+  global_comm->local_buffer->buffers[global_rank] = (void *)sendbuf_tmp;
   global_comm->local_buffer->displs[global_rank] = (int *)sdispls;
   global_comm->local_buffer->buffers_ready[global_rank] = true;
   __sync_synchronize();
@@ -51,6 +60,11 @@ int Coll_Alltoallv_local(const void *sendbuf, const int sendcounts[],
 #endif
     memcpy(dst, src, recvcounts[recvfrom_global_rank] * recvtype_extent);
 	}
+
+  Coll_barrier_local();
+  if (sendbuf == recvbuf) {
+    free(sendbuf_tmp);
+  }
 
   __sync_synchronize();
 

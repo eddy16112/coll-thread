@@ -6,14 +6,12 @@
 
 #include "coll.h"
 
-#define NTHREADS 4
+#define NTHREADS 8
 #define SEND_COUNT 80
 #define COLL_DTYPE collInt
 typedef int DTYPE;
 
 #define VERIFICATION_2
-
-pthread_barrier_t barrier;
 
 typedef struct thread_args_s {
   int mpi_comm_size;
@@ -85,6 +83,17 @@ void *thread_func(void *thread_args)
     rdispls[i] = i * seg_size;
   }
 
+  // test inplace
+  for (int i = 0; i < seg_size * global_comm_size; i++) {
+    recvbuf[i] = global_rank;
+  }
+
+  // Coll_Alltoallv(recvbuf, sendcount,
+  //           sdispls, COLL_DTYPE,
+  //           recvbuf, recvcount,
+  //           rdispls, COLL_DTYPE, 
+  //           &global_comm);
+
   Coll_Alltoallv(sendbuf, sendcount,
                 sdispls, COLL_DTYPE,
                 recvbuf, recvcount,
@@ -136,6 +145,10 @@ void *thread_func(void *thread_args)
     tmpbuf += tmp_seg_size;
   }
 
+  // for (int i = 0; i < 1024; i++) {
+  //   recvbuf[i] = global_rank;
+  // }
+
   if (global_rank == 0) {
     for (int i = 0; i < global_comm_size; i++) {
       printf("%d ", rdispls[i]);
@@ -154,7 +167,7 @@ void *thread_func(void *thread_args)
                  recvbuf, recvcount,
                  rdispls, COLL_DTYPE, 
                  &global_comm);
-  // if (global_rank == 2) {
+  // if (global_rank == 0) {
   //   for (int i = 0; i < total_size; i++) {
   //     printf("%d ", recvbuf[i]);
   //   }
@@ -164,7 +177,7 @@ void *thread_func(void *thread_args)
     DTYPE *tmp_recv = recvbufs[i];
     for (int j = 0; j < recvcount[i]; j++) {
       if (tmp_recv[j] != recvcount[i]-1) {
-        printf("i %d, j %d, recv %d, expect %d\n", i, j, tmp_recv[j], recvcount[i]-1);
+        printf("rank %d, i %d, j %d, recv %d, expect %d\n", global_rank, i, j, tmp_recv[j], recvcount[i]-1);
         assert(0);
       }
     }
@@ -197,7 +210,9 @@ int main( int argc, char *argv[] )
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
 
-  pthread_barrier_init(&barrier, NULL, NTHREADS);
+#ifndef COLL_USE_MPI 
+  Coll_init_local(NTHREADS);
+#endif
 
   for (int i = 0; i < NTHREADS; i++) {
     args[i].mpi_rank = mpi_rank;
@@ -214,8 +229,10 @@ int main( int argc, char *argv[] )
   for(int i = 0; i < NTHREADS; i++) {
       pthread_join( thread_id[i], NULL); 
   }
-  pthread_barrier_destroy(&barrier);
 
+#ifndef COLL_USE_MPI 
+  Coll_finalize_local();
+#endif
  
 #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
   MPI_Finalize();

@@ -137,5 +137,11 @@ int Coll_Allgather_local(void *sendbuf, int sendcount, collDataType_t sendtype,
                          collComm_t global_comm);
 
 void Coll_Update_buffer(collComm_t global_comm);
+
+void Coll_init_local(int nb_threads);
+
+void Coll_finalize_local(void);
+
+void Coll_barrier_local(void);
 #endif
 #endif // ifndef COLL_H

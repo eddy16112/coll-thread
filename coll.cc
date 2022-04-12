@@ -14,6 +14,10 @@ MPI_Datatype collDouble = MPI_DOUBLE;
 #else
 local_buffer_t local_buffer[BUFFER_SWAP_SIZE];
 
+static pthread_barrier_t local_barrier;
+
+static bool coll_local_inited = false;
+
 size_t get_dtype_size(collDataType_t dtype)
 {
   if (dtype == collChar) {
@@ -175,5 +179,35 @@ void Coll_Update_buffer(collComm_t global_comm)
   global_comm->current_buffer_idx ++;
   global_comm->current_buffer_idx %= BUFFER_SWAP_SIZE;
   // printf("rank %d, buffer idx %d\n", global_comm->global_rank, global_comm->current_buffer_idx);
+}
+
+// called from main thread
+void Coll_init_local(int nb_threads)
+{
+  for (int i = 0; i < BUFFER_SWAP_SIZE; i++) {
+    local_buffer_t *buffer = &(local_buffer[i]);
+    for (int j = 0; j < MAX_NB_THREADS; j++) {
+      buffer->buffers[j] = NULL;
+      buffer->displs[j] = NULL;
+      buffer->buffers_ready[j] = false;
+    }
+  }
+
+  pthread_barrier_init(&local_barrier, NULL, nb_threads);
+
+  coll_local_inited = true;
+}
+
+void Coll_finalize_local(void)
+{
+  assert(coll_local_inited == true);
+  pthread_barrier_destroy(&local_barrier);
+  coll_local_inited = false;
+}
+
+void Coll_barrier_local(void)
+{
+  assert(coll_local_inited == true);
+  pthread_barrier_wait(&local_barrier);
 }
 #endif

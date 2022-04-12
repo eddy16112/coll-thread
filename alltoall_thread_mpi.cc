@@ -28,8 +28,8 @@ int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
 
   // MPI_IN_PLACE
   if (sendbuf == recvbuf) {
-    sendbuf_tmp = (void *)malloc(total_size * recvtype_extent * recvcount);
-    memcpy(sendbuf_tmp, recvbuf, total_size * recvtype_extent * recvcount);
+    sendbuf_tmp = (void *)malloc(total_size * sendtype_extent * sendcount);
+    memcpy(sendbuf_tmp, recvbuf, total_size * sendtype_extent * sendcount);
     // int * sendval = (int*)sendbuf_tmp;
     // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
   } else {

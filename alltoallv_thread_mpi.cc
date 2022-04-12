@@ -24,16 +24,24 @@ int Coll_Alltoallv_thread(const void *sendbuf, const int sendcounts[],
 
   int global_rank = global_comm->global_rank;
 
+  void *sendbuf_tmp = NULL;
+
   // MPI_IN_PLACE
   if (sendbuf == recvbuf) {
-    assert(0);
+    int total_send_count = sdispls[total_size-1] + sendcounts[total_size-1];
+    sendbuf_tmp = (void *)malloc(sendtype_extent * total_send_count);
+    memcpy(sendbuf_tmp, recvbuf, sendtype_extent * total_send_count);
+    // int * sendval = (int*)sendbuf_tmp;
+    // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
+  } else {
+    sendbuf_tmp = (void*)sendbuf;
   }
 
   int sendto_global_rank, recvfrom_global_rank, sendto_mpi_rank, recvfrom_mpi_rank;
 	for(int i = 1 ; i < total_size + 1; i++) {
     sendto_global_rank  = (global_rank + i) % total_size;
     recvfrom_global_rank = (global_rank + total_size - i) % total_size;
-    char *src = (char*)sendbuf + (ptrdiff_t)sdispls[sendto_global_rank] * sendtype_extent;
+    char *src = (char*)sendbuf_tmp + (ptrdiff_t)sdispls[sendto_global_rank] * sendtype_extent;
     char *dst = (char*)recvbuf + (ptrdiff_t)rdispls[recvfrom_global_rank] * recvtype_extent;
     int scount = sendcounts[sendto_global_rank];
     int rcount = recvcounts[recvfrom_global_rank];
@@ -52,6 +60,10 @@ int Coll_Alltoallv_thread(const void *sendbuf, const int sendcounts[],
     res = MPI_Sendrecv(src, scount, sendtype, sendto_mpi_rank, send_tag, dst, rcount, recvtype, recvfrom_mpi_rank, recv_tag, global_comm->comm, &status);
     assert(res == MPI_SUCCESS);
 	}
+
+  if (sendbuf == recvbuf) {
+    free(sendbuf_tmp);
+  }
 
   return 0;
 }
