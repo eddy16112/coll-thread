@@ -48,9 +48,9 @@ void *thread_func(void *thread_args)
   global_comm.comm = args->comm;
 #endif
 
-  Coll_Gather(args->sendbuf, args->sendcount, args->sendtype, 
-              args->recvbuf, args->recvcount, args->recvtype,
-              args->root, &global_comm);
+  collGather(args->sendbuf, args->sendcount, args->sendtype, 
+             args->recvbuf, args->recvcount, args->recvtype,
+             args->root, &global_comm);
   return NULL;
 }
  
@@ -60,11 +60,10 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
+  collInit(argc, argv, NTHREADS);
+  
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  
-  int provided;
- 
-  MPI_Init_thread(&argc,&argv, MPI_THREAD_MULTIPLE, &provided);
   MPI_Comm_dup(MPI_COMM_WORLD, &mpi_comm);
   MPI_Comm_rank(mpi_comm, &mpi_rank);
   MPI_Comm_size(mpi_comm, &mpi_comm_size);
@@ -167,8 +166,7 @@ int main( int argc, char *argv[] )
   free(send_buffs);
   free(recv_buffs);
  
-#if defined (LEGATE_USE_GASNET)
-  MPI_Finalize();
-#endif
+  collFinalize();
+
   return 0;
 }

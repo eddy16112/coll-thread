@@ -1,5 +1,5 @@
 DEBUG		?= 1
-COLL_NETWORKS	?= mpi
+COLL_NETWORKS	?= local
 
 CC			= mpicxx
 CC_FLAGS	?=

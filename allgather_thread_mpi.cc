@@ -8,9 +8,9 @@
 
 #define ALLGATHER_USE_BCAST
  
-int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                          void *recvbuf, int recvcount, collDataType_t recvtype, 
-                          collComm_t global_comm)
+int collAllgatherMPI(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+                     void *recvbuf, int recvcount, collDataType_t recvtype, 
+                     collComm_t global_comm)
 {	
   int total_size = global_comm->global_comm_size;
 
@@ -28,18 +28,18 @@ int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
     // int * sendval = (int*)sendbuf_tmp;
     // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
   } else {
-    sendbuf_tmp = sendbuf;
+    sendbuf_tmp = const_cast<void*>(sendbuf);
   }
   
 #ifdef ALLGATHER_USE_BCAST
   global_comm->starting_tag = 0;
-  Coll_Gather_thread(sendbuf_tmp, sendcount, sendtype, 
-                     recvbuf, recvcount, recvtype, 
-                     0, global_comm);
+  collGatherMPI(sendbuf_tmp, sendcount, sendtype, 
+                recvbuf, recvcount, recvtype, 
+                0, global_comm);
 
   global_comm->starting_tag = 1;
-  Coll_Bcast_thread(recvbuf, recvcount * total_size, recvtype, 
-                    0, global_comm);
+  collBcastMPI(recvbuf, recvcount * total_size, recvtype, 
+               0, global_comm);
 #else
   int global_rank = global_comm->mpi_rank * global_comm->nb_threads + global_comm->tid;
 	for(int i = 0 ; i < total_size; i++) {
@@ -55,5 +55,5 @@ int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
     free(sendbuf_tmp);
   }
   
-  return 0;
+  return collSuccess;
 }

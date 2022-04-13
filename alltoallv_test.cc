@@ -48,9 +48,9 @@ void *thread_func(void *thread_args)
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
   }
-  Coll_Create_comm(&global_comm, global_comm_size, global_rank, mapping_table);
+  collCommCreate(&global_comm, global_comm_size, global_rank, mapping_table);
 #else
-  Coll_Create_comm(&global_comm, global_comm_size, global_rank, NULL);
+  collCommCreate(&global_comm, global_comm_size, global_rank, NULL);
 #endif
 
 #if 0
@@ -94,7 +94,7 @@ void *thread_func(void *thread_args)
   //           rdispls, COLL_DTYPE, 
   //           &global_comm);
 
-  Coll_Alltoallv(sendbuf, sendcount,
+  collAlltoallv(sendbuf, sendcount,
                 sdispls, COLL_DTYPE,
                 recvbuf, recvcount,
                 rdispls, COLL_DTYPE, 
@@ -120,9 +120,9 @@ void *thread_func(void *thread_args)
     sdispls[i] = i * seg_size;
   }
 
-  Coll_Allgather(&seg_size, 1, collInt, 
-                 recvcount, 1, collInt, 
-                 &global_comm);
+  collAllgather(&seg_size, 1, collInt, 
+                recvcount, 1, collInt, 
+                &global_comm);
   
   for (int i = 0; i < global_comm_size; i++) {
     assert(recvcount[i] == i + 1); 
@@ -162,11 +162,11 @@ void *thread_func(void *thread_args)
   // }
   // printf("\n");
   
-  Coll_Alltoallv(sendbuf, sendcount,
-                 sdispls, COLL_DTYPE,
-                 recvbuf, recvcount,
-                 rdispls, COLL_DTYPE, 
-                 &global_comm);
+  collAlltoallv(sendbuf, sendcount,
+                sdispls, COLL_DTYPE,
+                recvbuf, recvcount,
+                rdispls, COLL_DTYPE, 
+                &global_comm);
   // if (global_rank == 0) {
   //   for (int i = 0; i < total_size; i++) {
   //     printf("%d ", recvbuf[i]);
@@ -193,11 +193,10 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
+  collInit(argc, argv, NTHREADS);
+
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  
-  int provided;
- 
-  MPI_Init_thread(&argc,&argv, MPI_THREAD_MULTIPLE, &provided);
   MPI_Comm_dup(MPI_COMM_WORLD, &mpi_comm);
   MPI_Comm_rank(mpi_comm, &mpi_rank);
   MPI_Comm_size(mpi_comm, &mpi_comm_size);
@@ -209,10 +208,6 @@ int main( int argc, char *argv[] )
 
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
-
-#ifndef LEGATE_USE_GASNET 
-  Coll_init_local(NTHREADS);
-#endif
 
   for (int i = 0; i < NTHREADS; i++) {
     args[i].mpi_rank = mpi_rank;
@@ -230,12 +225,6 @@ int main( int argc, char *argv[] )
       pthread_join( thread_id[i], NULL); 
   }
 
-#ifndef LEGATE_USE_GASNET 
-  Coll_finalize_local();
-#endif
- 
-#if defined (LEGATE_USE_GASNET)
-  MPI_Finalize();
-#endif
+  collFinalize();
   return 0;
 }

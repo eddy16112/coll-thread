@@ -6,11 +6,11 @@
 
 #include "coll.h"
  
-int Coll_Alltoallv_local(const void *sendbuf, const int sendcounts[],
-                         const int sdispls[], collDataType_t sendtype,
-                         void *recvbuf, const int recvcounts[],
-                         const int rdispls[], collDataType_t recvtype, 
-                         collComm_t global_comm)
+int collAlltoallvLocal(const void *sendbuf, const int sendcounts[],
+                       const int sdispls[], collDataType_t sendtype,
+                       void *recvbuf, const int recvcounts[],
+                       const int rdispls[], collDataType_t recvtype, 
+                       collComm_t global_comm)
 {	
   int res;
 
@@ -33,7 +33,7 @@ int Coll_Alltoallv_local(const void *sendbuf, const int sendcounts[],
     // int * sendval = (int*)sendbuf_tmp;
     // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, sendtype_extent * total_send_count, sendval[0]);
   } else {
-    sendbuf_tmp = (void*)sendbuf;
+    sendbuf_tmp = const_cast<void*>(sendbuf);
   }
 
   global_comm->local_buffer = &(local_buffer[global_comm->current_buffer_idx]);
@@ -49,8 +49,8 @@ int Coll_Alltoallv_local(const void *sendbuf, const int sendcounts[],
 	for(int i = 1 ; i < total_size + 1; i++) {
     recvfrom_global_rank = (global_rank + total_size - i) % total_size;
     while (global_comm->local_buffer->buffers_ready[recvfrom_global_rank] != true);
-    src_base = global_comm->local_buffer->buffers[recvfrom_global_rank];
-    displs = global_comm->local_buffer->displs[recvfrom_global_rank];
+    src_base = const_cast<void*>(global_comm->local_buffer->buffers[recvfrom_global_rank]);
+    displs = const_cast<int*>(global_comm->local_buffer->displs[recvfrom_global_rank]);
     char *src = (char*)src_base + (ptrdiff_t)displs[recvfrom_seg_id] * sendtype_extent;
     char *dst = (char*)recvbuf + (ptrdiff_t)rdispls[recvfrom_global_rank] * recvtype_extent;
 #ifdef DEBUG_PRINT
@@ -61,14 +61,14 @@ int Coll_Alltoallv_local(const void *sendbuf, const int sendcounts[],
     memcpy(dst, src, recvcounts[recvfrom_global_rank] * recvtype_extent);
 	}
 
-  Coll_barrier_local();
+  collBarrierLocal();
   if (sendbuf == recvbuf) {
     free(sendbuf_tmp);
   }
 
   __sync_synchronize();
 
-  Coll_Update_buffer(global_comm);
+  collUpdateBuffer(global_comm);
 
-  return 0;
+  return collSuccess;
 }

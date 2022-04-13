@@ -5,6 +5,9 @@
 
 #include <stddef.h>
 
+#define collSuccess 0
+#define collError 1
+
 #if defined (LEGATE_USE_GASNET)
 #include <mpi.h>
 #else
@@ -13,8 +16,8 @@
 #define BUFFER_SWAP_SIZE 2
 
 typedef struct local_buffer_s {
-  void* buffers[MAX_NB_THREADS];
-  int* displs[MAX_NB_THREADS];
+  const void* buffers[MAX_NB_THREADS];
+  const int* displs[MAX_NB_THREADS];
   bool buffers_ready[MAX_NB_THREADS];
 } local_buffer_t;
 
@@ -69,79 +72,79 @@ typedef struct Coll_Comm_s {
 
 typedef Coll_Comm* collComm_t;
 
-int Coll_Create_comm(collComm_t global_comm, int global_comm_size, int global_rank, const int *mapping_table);
+int collCommCreate(collComm_t global_comm, int global_comm_size, int global_rank, const int *mapping_table);
 
-int Coll_Comm_free (collComm_t global_comm);
+int collCommDestroy(collComm_t global_comm);
 
-int Coll_Alltoallv(const void *sendbuf, const int sendcounts[],
-                   const int sdispls[], collDataType_t sendtype,
-                   void *recvbuf, const int recvcounts[],
-                   const int rdispls[], collDataType_t recvtype, 
-                   collComm_t global_comm);
-
-int Coll_Alltoall(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                  void *recvbuf, int recvcount, collDataType_t recvtype, 
+int collAlltoallv(const void *sendbuf, const int sendcounts[],
+                  const int sdispls[], collDataType_t sendtype,
+                  void *recvbuf, const int recvcounts[],
+                  const int rdispls[], collDataType_t recvtype, 
                   collComm_t global_comm);
 
-int Coll_Gather(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                void *recvbuf, int recvcount, collDataType_t recvtype, 
-                int root,
-                collComm_t global_comm);
+int collAlltoall(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+                 void *recvbuf, int recvcount, collDataType_t recvtype, 
+                 collComm_t global_comm);
 
-int Coll_Allgather(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                   void *recvbuf, int recvcount, collDataType_t recvtype, 
-                   collComm_t global_comm);
-
-int Coll_Bcast(void *buf, int count, collDataType_t type, 
+int collGather(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+               void *recvbuf, int recvcount, collDataType_t recvtype, 
                int root,
                collComm_t global_comm);
 
+int collAllgather(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+                  void *recvbuf, int recvcount, collDataType_t recvtype, 
+                  collComm_t global_comm);
+
+int collBcast(void *buf, int count, collDataType_t type, 
+              int root,
+              collComm_t global_comm);
+
+int collInit(int argc, char *argv[], int nb_threads=0);
+
+int collFinalize(void);
+
 #if defined (LEGATE_USE_GASNET)
-int Coll_Alltoallv_thread(const void *sendbuf, const int sendcounts[],
-                          const int sdispls[], collDataType_t sendtype,
-                          void *recvbuf, const int recvcounts[],
-                          const int rdispls[], collDataType_t recvtype, 
-                          collComm_t global_comm);
+int collAlltoallvMPI(const void *sendbuf, const int sendcounts[],
+                     const int sdispls[], collDataType_t sendtype,
+                     void *recvbuf, const int recvcounts[],
+                     const int rdispls[], collDataType_t recvtype, 
+                     collComm_t global_comm);
 
-int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                        void *recvbuf, int recvcount, collDataType_t recvtype, 
-                        collComm_t global_comm);
+int collAlltoallMPI(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+                    void *recvbuf, int recvcount, collDataType_t recvtype, 
+                    collComm_t global_comm);
 
-int Coll_Gather_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                       void *recvbuf, int recvcount, collDataType_t recvtype, 
-                       int root,
-                       collComm_t global_comm);
+int collGatherMPI(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+                  void *recvbuf, int recvcount, collDataType_t recvtype, 
+                  int root,
+                  collComm_t global_comm);
 
-int Coll_Allgather_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                          void *recvbuf, int recvcount, collDataType_t recvtype, 
-                          collComm_t global_comm);
+int collAllgatherMPI(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+                     void *recvbuf, int recvcount, collDataType_t recvtype, 
+                     collComm_t global_comm);
 
-int Coll_Bcast_thread(void *buf, int count, collDataType_t type, 
-                      int root,
-                      collComm_t global_comm);
+int collBcastMPI(void *buf, int count, collDataType_t type, 
+                 int root,
+                 collComm_t global_comm);
 #else
 size_t get_dtype_size(collDataType_t dtype);
 
-int Coll_Alltoallv_local(const void *sendbuf, const int sendcounts[],
-                         const int sdispls[], collDataType_t sendtype,
-                         void *recvbuf, const int recvcounts[],
-                         const int rdispls[], collDataType_t recvtype, 
-                         collComm_t global_comm);
+int collAlltoallvLocal(const void *sendbuf, const int sendcounts[],
+                       const int sdispls[], collDataType_t sendtype,
+                       void *recvbuf, const int recvcounts[],
+                       const int rdispls[], collDataType_t recvtype, 
+                       collComm_t global_comm);
 
-int Coll_Alltoall_local(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                        void *recvbuf, int recvcount, collDataType_t recvtype, 
-                        collComm_t global_comm);
+int collAlltoallLocal(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+                      void *recvbuf, int recvcount, collDataType_t recvtype, 
+                      collComm_t global_comm);
 
-int Coll_Allgather_local(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                         void *recvbuf, int recvcount, collDataType_t recvtype, 
-                         collComm_t global_comm);
+int collAllgatherLocal(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+                       void *recvbuf, int recvcount, collDataType_t recvtype, 
+                       collComm_t global_comm);
 
-void Coll_Update_buffer(collComm_t global_comm);
+void collUpdateBuffer(collComm_t global_comm);
 
-void Coll_init_local(int nb_threads);
-
-void Coll_finalize_local(void);
-
-void Coll_barrier_local(void);
+void collBarrierLocal(void);
 #endif
 #endif // ifndef COLL_H

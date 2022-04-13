@@ -6,10 +6,10 @@
 
 #include "coll.h"
  
-int Coll_Gather_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                       void *recvbuf, int recvcount, collDataType_t recvtype, 
-                       int root,
-                       collComm_t global_comm)
+int collGatherMPI(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+                  void *recvbuf, int recvcount, collDataType_t recvtype, 
+                  int root,
+                  collComm_t global_comm)
 {	
   int res;
 
@@ -67,5 +67,5 @@ int Coll_Gather_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
     dst += incr;
 	}
 
-  return 0;
+  return collSuccess;
 }

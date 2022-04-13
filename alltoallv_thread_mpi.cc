@@ -6,11 +6,11 @@
 
 #include "coll.h"
  
-int Coll_Alltoallv_thread(const void *sendbuf, const int sendcounts[],
-                          const int sdispls[], collDataType_t sendtype,
-                          void *recvbuf, const int recvcounts[],
-                          const int rdispls[], collDataType_t recvtype, 
-                          collComm_t global_comm)
+int collAlltoallvMPI(const void *sendbuf, const int sendcounts[],
+                     const int sdispls[], collDataType_t sendtype,
+                     void *recvbuf, const int recvcounts[],
+                     const int rdispls[], collDataType_t recvtype, 
+                     collComm_t global_comm)
 {	
   int res;
 
@@ -34,7 +34,7 @@ int Coll_Alltoallv_thread(const void *sendbuf, const int sendcounts[],
     // int * sendval = (int*)sendbuf_tmp;
     // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
   } else {
-    sendbuf_tmp = (void*)sendbuf;
+    sendbuf_tmp = const_cast<void*>(sendbuf);
   }
 
   int sendto_global_rank, recvfrom_global_rank, sendto_mpi_rank, recvfrom_mpi_rank;
@@ -65,5 +65,5 @@ int Coll_Alltoallv_thread(const void *sendbuf, const int sendcounts[],
     free(sendbuf_tmp);
   }
 
-  return 0;
+  return collSuccess;
 }

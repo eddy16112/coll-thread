@@ -45,14 +45,14 @@ void *thread_func(void *thread_args)
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
   }
-  Coll_Create_comm(&global_comm, global_comm_size, global_rank, mapping_table);
+  collCommCreate(&global_comm, global_comm_size, global_rank, mapping_table);
 #else
-  Coll_Create_comm(&global_comm, global_comm_size, global_rank, NULL);
+  collCommCreate(&global_comm, global_comm_size, global_rank, NULL);
 #endif
 
-  Coll_Allgather(args->sendbuf, args->sendcount, args->sendtype, 
-                 args->recvbuf, args->recvcount, args->recvtype,
-                 &global_comm);
+  collAllgather(args->sendbuf, args->sendcount, args->sendtype, 
+                args->recvbuf, args->recvcount, args->recvtype,
+                &global_comm);
   return NULL;
 }
  
@@ -62,21 +62,16 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
+  collInit(argc, argv, NTHREADS);
+
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  
-  int provided;
- 
-  MPI_Init_thread(&argc,&argv, MPI_THREAD_MULTIPLE, &provided);
   MPI_Comm_dup(MPI_COMM_WORLD, &mpi_comm);
   MPI_Comm_rank(mpi_comm, &mpi_rank);
   MPI_Comm_size(mpi_comm, &mpi_comm_size);
   // pid_t pid = getpid();
   // printf("rank %d, pid %ld\n", mpi_rank, pid);
   // sleep(10);
-#endif
-
-#ifndef LEGATE_USE_GASNET 
-  Coll_init_local(NTHREADS);
 #endif
 
   size_t N = mpi_comm_size * SEND_COUNT * NTHREADS;
@@ -171,12 +166,7 @@ int main( int argc, char *argv[] )
   free(send_buffs);
   free(recv_buffs);
 
-#ifndef LEGATE_USE_GASNET 
-  Coll_finalize_local();
-#endif
- 
-#if defined (LEGATE_USE_GASNET)
-  MPI_Finalize();
-#endif
+  collFinalize();
+
   return 0;
 }

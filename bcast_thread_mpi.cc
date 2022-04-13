@@ -6,9 +6,9 @@
 
 #include "coll.h"
  
-int Coll_Bcast_thread(void *buf, int count, collDataType_t type, 
-                      int root,
-                      collComm_t global_comm)
+int collBcastMPI(void *buf, int count, collDataType_t type, 
+                 int root,
+                 collComm_t global_comm)
 {	
   int res;
 
@@ -53,5 +53,5 @@ int Coll_Bcast_thread(void *buf, int count, collDataType_t type,
     }
 	}
 
-  return 0;
+  return collSuccess;
 }

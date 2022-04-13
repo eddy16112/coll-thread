@@ -8,9 +8,9 @@
 
 #define ALLTOALL_USE_SENDRECV
  
-int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                        void *recvbuf, int recvcount, collDataType_t recvtype, 
-                        collComm_t global_comm)
+int collAlltoallMPI(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+                    void *recvbuf, int recvcount, collDataType_t recvtype, 
+                    collComm_t global_comm)
 {	
   int res;
 
@@ -33,7 +33,7 @@ int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
     // int * sendval = (int*)sendbuf_tmp;
     // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
   } else {
-    sendbuf_tmp = sendbuf;
+    sendbuf_tmp = const_cast<void*>(sendbuf);
   }
 
 #ifdef ALLTOALL_USE_SENDRECV
@@ -105,5 +105,5 @@ int Coll_Alltoall_thread(void *sendbuf, int sendcount, collDataType_t sendtype,
     free(sendbuf_tmp);
   }
 
-  return 0;
+  return collSuccess;
 }

@@ -6,9 +6,9 @@
 
 #include "coll.h"
  
-int Coll_Allgather_local(void *sendbuf, int sendcount, collDataType_t sendtype, 
-                         void *recvbuf, int recvcount, collDataType_t recvtype, 
-                         collComm_t global_comm)
+int collAllgatherLocal(const void *sendbuf, int sendcount, collDataType_t sendtype, 
+                       void *recvbuf, int recvcount, collDataType_t recvtype, 
+                       collComm_t global_comm)
 {	
   assert(recvcount == sendcount);
   assert(sendtype == recvtype);
@@ -30,7 +30,7 @@ int Coll_Allgather_local(void *sendbuf, int sendcount, collDataType_t sendtype,
     // int * sendval = (int*)sendbuf_tmp;
     // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
   } else {
-    sendbuf_tmp = sendbuf;
+    sendbuf_tmp = const_cast<void*>(sendbuf);
   }
 
   global_comm->local_buffer = &(local_buffer[global_comm->current_buffer_idx]);
@@ -51,14 +51,14 @@ int Coll_Allgather_local(void *sendbuf, int sendcount, collDataType_t sendtype,
     memcpy(dst, src, sendcount * sendtype_extent);
 	}
 
-  Coll_barrier_local();
+  collBarrierLocal();
   if (sendbuf == recvbuf) {
     free(sendbuf_tmp);
   }
 
   __sync_synchronize();
 
-  Coll_Update_buffer(global_comm);
+  collUpdateBuffer(global_comm);
 
-  return 0;
+  return collSuccess;
 }
