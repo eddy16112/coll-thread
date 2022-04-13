@@ -273,7 +273,7 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
                         const std::vector<PhysicalRegion> &regions,
                         Context ctx, Runtime *runtime)
 {
-  const int point = task->index_point.point_data[0];
+  const int point = task->index_point[0];
   const int* mapping_table = (const int*)task->args;
 
   printf("Init Comm for point %d pid " IDFMT ", index size %ld\n", 
@@ -289,9 +289,9 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
   int global_comm_size = task->index_domain.get_volume();
 
  #if defined (LEGATE_USE_GASNET)
-  Coll_Create_comm(global_comm, global_comm_size, global_rank, mapping_table);
+  collCommCreate(global_comm, global_comm_size, global_rank, mapping_table);
 #else
-  Coll_Create_comm(global_comm, global_comm_size, global_rank, NULL);
+  collCommCreate(global_comm, global_comm_size, global_rank, NULL);
 #endif
 
   assert(mapping_table[point] == global_comm->mpi_rank);
@@ -350,7 +350,7 @@ void alltoall_task(const Task *task,
 //   assert(mapping_ptr[point] == global_comm.mpi_rank);
 //   assert(global_comm_size == rect_mapping.volume());
 
-  Coll_Alltoall((void*)sendbuf, task_arg.sendcount, COLL_DTYPE, 
+  collAlltoall((void*)sendbuf, task_arg.sendcount, COLL_DTYPE, 
                 (void*)recvbuf, task_arg.sendcount, COLL_DTYPE,
                 global_comm);
   printf("Point %d, Alltoall Done\n", point);
@@ -366,7 +366,7 @@ void finalize_comm_cpu_task(const Task *task,
   assert(global_comm->global_rank == point);
   assert(global_comm->status == true);
   
-  Coll_Comm_free(global_comm);
+  collCommDestroy(global_comm);
   free(global_comm);
   global_comm = NULL;
   printf("Point %d, Finalize Done\n", point);
