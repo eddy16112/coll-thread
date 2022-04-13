@@ -6,7 +6,7 @@
 
 #include "coll.h"
 
-#if defined (COLL_USE_MPI)
+#if defined (LEGATE_USE_GASNET)
 MPI_Datatype collChar = MPI_CHAR;
 MPI_Datatype collInt = MPI_INT;
 MPI_Datatype collFloat = MPI_FLOAT;
@@ -41,7 +41,7 @@ int Coll_Create_comm(collComm_t global_comm, int global_comm_size, int global_ra
   global_comm->global_rank = global_rank;
   global_comm->starting_tag = 0;
   global_comm->status = true;
-#if defined(COLL_USE_MPI)
+#if defined(LEGATE_USE_GASNET)
   int mpi_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   global_comm->mpi_comm_size = 1;
@@ -70,7 +70,7 @@ int Coll_Create_comm(collComm_t global_comm, int global_comm_size, int global_ra
 
 int Coll_Comm_free (collComm_t global_comm)
 {
-#if defined(COLL_USE_MPI)
+#if defined(LEGATE_USE_GASNET)
   if (global_comm->mapping_table.global_rank != NULL) {
     free(global_comm->mapping_table.global_rank);
     global_comm->mapping_table.global_rank = NULL;
@@ -90,7 +90,7 @@ int Coll_Alltoallv(const void *sendbuf, const int sendcounts[],
                    const int rdispls[], collDataType_t recvtype, 
                    collComm_t global_comm)
 {
-#if defined(COLL_USE_MPI)
+#if defined(LEGATE_USE_GASNET)
   printf("MPI Alltoallv: global_rank %d, total_size %d\n", global_comm->global_rank, global_comm->global_comm_size);
   return Coll_Alltoallv_thread(sendbuf, sendcounts,
                                sdispls, sendtype,
@@ -111,7 +111,7 @@ int Coll_Alltoall(void *sendbuf, int sendcount, collDataType_t sendtype,
                   void *recvbuf, int recvcount, collDataType_t recvtype, 
                   collComm_t global_comm)
 {
-#if defined(COLL_USE_MPI)
+#if defined(LEGATE_USE_GASNET)
   printf("MPI Alltoall: global_rank %d, total_size %d\n", global_comm->global_rank, global_comm->global_comm_size);
   return Coll_Alltoall_thread(sendbuf, sendcount, sendtype, 
                               recvbuf, recvcount, recvtype,
@@ -129,7 +129,7 @@ int Coll_Gather(void *sendbuf, int sendcount, collDataType_t sendtype,
                 int root,
                 collComm_t global_comm)
 {
-#if defined(COLL_USE_MPI)
+#if defined(LEGATE_USE_GASNET)
   printf("MPI Gather: global_rank %d, total_size %d\n", global_comm->global_rank, global_comm->global_comm_size);
   return Coll_Gather_thread(sendbuf, sendcount, sendtype, 
                             recvbuf, recvcount, recvtype,
@@ -145,7 +145,7 @@ int Coll_Allgather(void *sendbuf, int sendcount, collDataType_t sendtype,
                    void *recvbuf, int recvcount, collDataType_t recvtype, 
                    collComm_t global_comm)
 {
-#if defined(COLL_USE_MPI)
+#if defined(LEGATE_USE_GASNET)
   printf("MPI Allgather: global_rank %d, total_size %d\n", global_comm->global_rank, global_comm->global_comm_size);
   return Coll_Allgather_thread(sendbuf, sendcount, sendtype, 
                                recvbuf, recvcount, recvtype,
@@ -162,7 +162,7 @@ int Coll_Bcast(void *buf, int count, collDataType_t type,
                int root,
                collComm_t global_comm)
 {
-#if defined(COLL_USE_MPI)
+#if defined(LEGATE_USE_GASNET)
   printf("MPI Bcast: global_rank %d, total_size %d\n", global_comm->global_rank, global_comm->mpi_comm_size * global_comm->nb_threads);
   return Coll_Bcast(buf, count, type, 
                     root,
@@ -173,7 +173,7 @@ int Coll_Bcast(void *buf, int count, collDataType_t type,
 #endif 
 }
 
-#ifndef COLL_USE_MPI
+#ifndef LEGATE_USE_GASNET
 void Coll_Update_buffer(collComm_t global_comm)
 {
   global_comm->current_buffer_idx ++;

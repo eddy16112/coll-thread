@@ -5,7 +5,7 @@
 
 #include <stddef.h>
 
-#if defined (COLL_USE_MPI)
+#if defined (LEGATE_USE_GASNET)
 #include <mpi.h>
 #else
 #include <stdbool.h>
@@ -22,7 +22,7 @@ extern local_buffer_t local_buffer[BUFFER_SWAP_SIZE];
 
 #endif
 
-#if defined (COLL_USE_MPI)
+#if defined (LEGATE_USE_GASNET)
 typedef MPI_Datatype collDataType_t;
 // TODO: fix it
 extern MPI_Datatype collChar;
@@ -50,7 +50,7 @@ typedef enum {
 #endif
 
 typedef struct Coll_Comm_s {
-#if defined (COLL_USE_MPI)
+#if defined (LEGATE_USE_GASNET)
   MPI_Comm comm;
   mapping_table_t mapping_table;
 #else
@@ -96,7 +96,7 @@ int Coll_Bcast(void *buf, int count, collDataType_t type,
                int root,
                collComm_t global_comm);
 
-#if defined (COLL_USE_MPI)
+#if defined (LEGATE_USE_GASNET)
 int Coll_Alltoallv_thread(const void *sendbuf, const int sendcounts[],
                           const int sdispls[], collDataType_t sendtype,
                           void *recvbuf, const int recvcounts[],

@@ -16,7 +16,7 @@ ifeq ($(strip $(DEBUG)),1)
 endif
 
 ifeq ($(strip $(COLL_NETWORKS)),mpi)
-	CC_FLAGS += -DCOLL_USE_MPI
+	CC_FLAGS += -DLEGATE_USE_GASNET
 endif
 
 COLL_SRC	?=

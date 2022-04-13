@@ -21,7 +21,7 @@ typedef struct thread_args_s {
   int nb_threads;
   int mpi_rank;
   int tid;
-#if defined (COLL_USE_MPI)
+#if defined (LEGATE_USE_GASNET)
   MPI_Comm comm;
 #endif
   void *sendbuf;
@@ -50,7 +50,7 @@ void *thread_func(void *thread_args)
     global_comm.global_rank = global_rank;
     global_comm.global_comm_size = args->global_comm_size; 
 
-#if defined (COLL_USE_MPI)
+#if defined (LEGATE_USE_GASNET)
     global_comm.comm = args->comm;
 #endif
 
@@ -67,7 +67,7 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
-#if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
+#if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  
   int provided;
  
@@ -112,7 +112,7 @@ int main( int argc, char *argv[] )
     recv_buffs[i] = b;
   }
  
- #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
+ #if defined (LEGATE_USE_GASNET)
   MPI_Barrier(mpi_comm);
 #endif
 
@@ -126,7 +126,7 @@ int main( int argc, char *argv[] )
     args[i].mpi_comm_size = mpi_comm_size;
     args[i].tid = i;
     args[i].nb_threads = NTHREADS;
- #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
+ #if defined (LEGATE_USE_GASNET)
     args[i].comm = mpi_comm;
   #endif
     args[i].sendbuf = send_buffs[i];
@@ -146,7 +146,7 @@ int main( int argc, char *argv[] )
   }
   pthread_barrier_destroy(&barrier);
 
- #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
+ #if defined (LEGATE_USE_GASNET)
 	MPI_Barrier(mpi_comm);
 #endif
 
@@ -199,7 +199,7 @@ int main( int argc, char *argv[] )
   free(send_buffs);
   free(recv_buffs);
  
-#if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
+#if defined (LEGATE_USE_GASNET)
   MPI_Finalize();
 #endif
   return 0;

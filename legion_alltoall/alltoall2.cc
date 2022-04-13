@@ -68,7 +68,7 @@ void top_level_task(const Task *task,
   task_args_t task_arg;
   task_arg.nb_threads = nb_threads;
   task_arg.sendcount = sendcount;
-#ifdef COLL_USE_MPI
+#ifdef LEGATE_USE_GASNET
   int mpi_rank, mpi_comm_size;
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_comm_size);
@@ -263,7 +263,7 @@ int init_mapping_task(const Task *task,
                      Context ctx, Runtime *runtime)
 {
   int mpi_rank = 0;
-#if defined (COLL_USE_MPI)
+#if defined (LEGATE_USE_GASNET)
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 #endif
   return mpi_rank;
@@ -288,7 +288,7 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
   int global_rank = point;
   int global_comm_size = task->index_domain.get_volume();
 
- #if defined (COLL_USE_MPI)
+ #if defined (LEGATE_USE_GASNET)
   Coll_Create_comm(global_comm, global_comm_size, global_rank, mapping_table);
 #else
   Coll_Create_comm(global_comm, global_comm_size, global_rank, NULL);
@@ -341,7 +341,7 @@ void alltoall_task(const Task *task,
 //   int global_rank = point;
 //   int global_comm_size = task->index_domain.get_volume();
 
-//  #if defined (COLL_USE_MPI)
+//  #if defined (LEGATE_USE_GASNET)
 //   Coll_Create_comm(&global_comm, global_comm_size, global_rank, mapping_ptr);
 // #else
 //   Coll_Create_comm(&global_comm, global_comm_size, global_rank, NULL);
@@ -390,7 +390,7 @@ void check_task(const Task *task,
   const DTYPE *recvbuf = recvacc.ptr(rect.lo);
 
   int mpi_rank = 0;
-#if defined (COLL_USE_MPI)
+#if defined (LEGATE_USE_GASNET)
   MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
 #endif
   int tid = point % task_arg.nb_threads;
@@ -442,7 +442,7 @@ int main(int argc, char **argv)
 {
   Runtime::set_top_level_task_id(TOP_LEVEL_TASK_ID);
 
-#ifdef COLL_USE_MPI
+#ifdef LEGATE_USE_GASNET
   int provided;
  
   MPI_Init_thread(&argc,&argv, MPI_THREAD_MULTIPLE, &provided);
@@ -498,7 +498,7 @@ int main(int argc, char **argv)
   }
 
   int val = Runtime::start(argc, argv);
-#ifdef COLL_USE_MPI
+#ifdef LEGATE_USE_GASNET
   MPI_Finalize();
 #endif
   return val;

@@ -21,7 +21,7 @@ typedef struct thread_args_s {
   int nb_threads;
   int mpi_rank;
   int tid;
-#if defined (COLL_USE_MPI)
+#if defined (LEGATE_USE_GASNET)
   MPI_Comm comm;
 #endif
   void *sendbuf;
@@ -40,7 +40,7 @@ void *thread_func(void *thread_args)
   int global_rank = args->mpi_rank * args->nb_threads + args->tid;
   int global_comm_size = args->mpi_comm_size * args->nb_threads;
 
- #if defined (COLL_USE_MPI)
+ #if defined (LEGATE_USE_GASNET)
   int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
@@ -62,7 +62,7 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
-#if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
+#if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  
   int provided;
  
@@ -75,7 +75,7 @@ int main( int argc, char *argv[] )
   // sleep(10);
 #endif
 
-#ifndef COLL_USE_MPI 
+#ifndef LEGATE_USE_GASNET 
   Coll_init_local(NTHREADS);
 #endif
 
@@ -107,7 +107,7 @@ int main( int argc, char *argv[] )
     recv_buffs[i] = b;
   }
  
- #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
+ #if defined (LEGATE_USE_GASNET)
   MPI_Barrier(mpi_comm);
 #endif
 
@@ -121,7 +121,7 @@ int main( int argc, char *argv[] )
     args[i].mpi_comm_size = mpi_comm_size;
     args[i].tid = i;
     args[i].nb_threads = NTHREADS;
- #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
+ #if defined (LEGATE_USE_GASNET)
     args[i].comm = mpi_comm;
   #endif
     args[i].sendbuf = send_buffs[i];
@@ -139,7 +139,7 @@ int main( int argc, char *argv[] )
   }
   pthread_barrier_destroy(&barrier);
 
- #if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
+ #if defined (LEGATE_USE_GASNET)
 	MPI_Barrier(mpi_comm);
 #endif
 
@@ -171,11 +171,11 @@ int main( int argc, char *argv[] )
   free(send_buffs);
   free(recv_buffs);
 
-#ifndef COLL_USE_MPI 
+#ifndef LEGATE_USE_GASNET 
   Coll_finalize_local();
 #endif
  
-#if defined (COLL_USE_MPI) || defined (COLL_USE_NCCL)
+#if defined (LEGATE_USE_GASNET)
   MPI_Finalize();
 #endif
   return 0;
