@@ -1,15 +1,36 @@
 DEBUG		?= 1
 COLL_NETWORKS	?= mpi
 
-CC			= mpicxx
+CXX				= mpicxx
+AR				= ar
 CC_FLAGS	?=
 LD_FLAGS	?= -lpthread
 INC_FLAGS	?=
+SO_FLAGS	?=
+SHARED_OBJECTS ?= 0
+COLL_LIBS := -L. -lcoll
 
 CFLAGS		?=
 LDFLAGS		?=
 CC_FLAGS	+= $(CFLAGS)
 LD_FLAGS	+= $(LDFLAGS)
+
+ifeq ($(strip $(SHARED_OBJECTS)),0)
+SLIB_COLL     := libcoll.a
+else
+CC_FLAGS	+= -fPIC
+ifeq ($(shell uname -s),Darwin)
+SLIB_COLL     := libcoll.dylib
+else
+SLIB_COLL     := libcoll.so
+endif
+endif
+
+ifeq ($(strip $(DARWIN)),1)
+SO_FLAGS += -dynamiclib -single_module -undefined dynamic_lookup -fPIC
+else
+SO_FLAGS += -shared
+endif
 
 ifeq ($(strip $(DEBUG)),1)
 	CC_FLAGS	+= -g -O0
@@ -53,31 +74,42 @@ OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub
 build: $(OUTFILE)
 
 clean:
-	rm -rf *.o $(OUTFILE)
+	rm -rf *.o *.so *.a $(OUTFILE)
+
+
+ifeq ($(strip $(SHARED_OBJECTS)),0)
+$(SLIB_COLL) : $(COLL_OBJS)
+	rm -f $@
+	$(AR) rcs $@ $^
+else
+$(SLIB_COLL) : $(COLL_OBJS)
+	rm -f $@
+	$(CXX) $(SO_FLAGS) -o $@ $(COLL_OBJS)
+endif
 
 $(COLL_OBJS) : %.cc.o : %.cc
-	$(CC) -c -o $@ $< $(CC_FLAGS) $(INC_FLAGS)
+	$(CXX) -c -o $@ $< $(CC_FLAGS) $(INC_FLAGS)
 
 $(COLL_TEST_OBJS) : %.cc.o : %.cc
-	$(CC) -c -o $@ $< $(CC_FLAGS) $(INC_FLAGS)
+	$(CXX) -c -o $@ $< $(CC_FLAGS) $(INC_FLAGS)
 
-alltoall_test: $(COLL_OBJS) alltoall_test.cc.o
-	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
+alltoall_test: $(SLIB_COLL) alltoall_test.cc.o
+	$(CXX) -o $@ alltoall_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
 
-gather_test: $(COLL_OBJS) gather_test.cc.o
-	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
+gather_test: $(SLIB_COLL) gather_test.cc.o
+	$(CXX) -o $@ gather_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
 
-allgather_test: $(COLL_OBJS) allgather_test.cc.o
-	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
+allgather_test: $(SLIB_COLL) allgather_test.cc.o
+	$(CXX) -o $@ allgather_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
 
-bcast_test: $(COLL_OBJS) bcast_test.cc.o
-	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
+bcast_test: $(SLIB_COLL) bcast_test.cc.o
+	$(CXX) -o $@ bcast_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
 
-alltoall_fake_sub_test: $(COLL_OBJS) alltoall_fake_sub_test.cc.o
-	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
+alltoall_fake_sub_test: $(SLIB_COLL) alltoall_fake_sub_test.cc.o
+	$(CXX) -o $@ alltoall_fake_sub_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
 
-alltoallv_test: $(COLL_OBJS) alltoallv_test.cc.o
-	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
+alltoallv_test: $(SLIB_COLL) alltoallv_test.cc.o
+	$(CXX) -o $@ alltoallv_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
 
 # alltoall_thread2: alltoall_thread2.o
 # 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)

@@ -72,6 +72,10 @@ typedef struct Coll_Comm_s {
 
 typedef Coll_Comm* collComm_t;
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 int collCommCreate(collComm_t global_comm, int global_comm_size, int global_rank, const int *mapping_table);
 
 int collCommDestroy(collComm_t global_comm);
@@ -147,4 +151,9 @@ void collUpdateBuffer(collComm_t global_comm);
 
 void collBarrierLocal(void);
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // ifndef COLL_H
