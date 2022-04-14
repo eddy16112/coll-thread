@@ -145,7 +145,7 @@ void *thread_func(void *thread_args)
     tmpbuf += tmp_seg_size;
   }
 
-  // for (int i = 0; i < 1024; i++) {
+  // for (int i = 0; i < 2048; i++) {
   //   recvbuf[i] = global_rank;
   // }
 
@@ -156,7 +156,7 @@ void *thread_func(void *thread_args)
     printf("\n");
   }
 
-  printf("global rank, recv total size %d \n", total_size);
+  printf("global rank, recv total size %d , send size %d\n", total_size, seg_size * global_comm_size);
   // for (int i = 0; i < seg_size * global_comm_size; i++) {
   //   printf("%d ", sendbuf[i]);
   // }
@@ -193,7 +193,7 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
-  collInit(argc, argv, NTHREADS);
+  collInit(0, NULL, NTHREADS);
 
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  

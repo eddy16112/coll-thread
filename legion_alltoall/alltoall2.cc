@@ -158,8 +158,15 @@ void top_level_task(const Task *task,
     mapping_table[i] = mapping_table_future_map.get_result<int>(i);
   }
 
+#if 0
   IndexLauncher init_comm_cpu_launcher(INIT_COMM_CPU_TASK_ID, color_is, 
                                       TaskArgument(mapping_table, mapping_table_size), arg_map);
+#else
+  IndexLauncher init_comm_cpu_launcher(INIT_COMM_CPU_TASK_ID, color_is, 
+                                      TaskArgument(NULL, 0), arg_map);
+  Future mapping_table_f = Future::from_untyped_pointer(runtime, mapping_table, sizeof(int)*num_subregions);
+  init_comm_cpu_launcher.add_future(mapping_table_f);                                   
+#endif
   FutureMap comm_future_map = runtime->execute_index_space(ctx, init_comm_cpu_launcher);
   free(mapping_table);
 
@@ -274,8 +281,11 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
                         Context ctx, Runtime *runtime)
 {
   const int point = task->index_point[0];
+#if 0
   const int* mapping_table = (const int*)task->args;
-
+#else
+  const int* mapping_table = (const int*)task->futures[0].get_buffer(Memory::SYSTEM_MEM);
+#endif
   printf("Init Comm for point %d pid " IDFMT ", index size %ld\n", 
         point, task->current_proc.id, task->index_domain.get_volume());
 
