@@ -6,7 +6,7 @@
 
 #include "coll.h"
 
-#define NTHREADS 8
+#define NTHREADS 12
 #define SEND_COUNT 80
 #define COLL_DTYPE collInt
 typedef int DTYPE;
@@ -156,7 +156,7 @@ void *thread_func(void *thread_args)
     printf("\n");
   }
 
-  printf("global rank, recv total size %d , send size %d\n", total_size, seg_size * global_comm_size);
+  printf("global rank %d, recv total size %d , send size %d\n", global_rank, total_size, seg_size * global_comm_size);
   // for (int i = 0; i < seg_size * global_comm_size; i++) {
   //   printf("%d ", sendbuf[i]);
   // }
