@@ -25,6 +25,7 @@ enum TaskIDs {
   TOP_LEVEL_TASK_ID,
   INIT_FIELD_TASK_ID,
   ALLGATHER_TASK_ID,
+  CHECK_TASK_ID,
 };
 
 enum FieldIDs {
@@ -36,7 +37,8 @@ void top_level_task(const Task *task,
                     Context ctx, Runtime *runtime)
 {
   int num_subregions = 2;
-  int count_per_subregion = 80;
+  int count_per_subregion = 8;
+  int num_iterations = 9;
   {
     const InputArgs &command_args = Runtime::get_input_args();
     for (int i = 1; i < command_args.argc; i++)
@@ -45,6 +47,8 @@ void top_level_task(const Task *task,
         num_subregions = atoi(command_args.argv[++i]);
       if (!strcmp(command_args.argv[i],"-n"))
         count_per_subregion = atoi(command_args.argv[++i]);
+      if (!strcmp(command_args.argv[i],"-i"))
+        num_iterations = atoi(command_args.argv[++i]);
     }
   }
 
@@ -63,67 +67,65 @@ void top_level_task(const Task *task,
     runtime->attach_name(input_fs, FID_X, "X");
   }
 
-  LogicalRegion input_lr = runtime->create_logical_region(ctx, is, input_fs);
-  runtime->attach_name(input_lr, "input_lr");
-
   Rect<1> color_bounds(0,num_subregions-1);
   IndexSpace color_is = runtime->create_index_space(ctx, color_bounds);
 
   IndexPartition ip = runtime->create_equal_partition(ctx, is, color_is);
   runtime->attach_name(ip, "ip");
 
-  LogicalPartition input_lp = runtime->get_logical_partition(ctx, input_lr, ip);
-  runtime->attach_name(input_lp, "input_lp");
+  LogicalRegion input_lr[2];
+  LogicalPartition input_lp[2];
+  for (int i = 0; i < 2; i++) {
+    input_lr[i] = runtime->create_logical_region(ctx, is, input_fs);
+    // runtime->attach_name(input_lr[i], "input1_lr");
+    input_lp[i] = runtime->get_logical_partition(ctx, input_lr[i], ip);
+    // runtime->attach_name(input_lp[i], "input1_lp");
+  }
 
-  // Create our launch domain.  Note that is the same as color domain
-  // as we are going to launch one task for each subregion we created.
   ArgumentMap arg_map;
   int print_flag = 1;
-  {
-    IndexLauncher init_launcher(INIT_FIELD_TASK_ID, color_is, 
-                                TaskArgument(&print_flag, sizeof(int)), arg_map);
-    init_launcher.add_region_requirement(
-        RegionRequirement(input_lp, 0/*projection ID*/, 
-                          WRITE_DISCARD, EXCLUSIVE, input_lr));
-    init_launcher.region_requirements[0].add_field(FID_X);
-    runtime->execute_index_space(ctx, init_launcher);
-  }
-
-  {
-    IndexLauncher allgather_launcher(ALLGATHER_TASK_ID, color_is, 
-                                        TaskArgument(&print_flag, sizeof(int)), arg_map);
-    allgather_launcher.add_region_requirement(
-        RegionRequirement(input_lr, 0/*projection ID*/, 
-                            READ_ONLY, EXCLUSIVE, input_lr));
-    allgather_launcher.region_requirements[0].add_field(FID_X);
-    runtime->execute_index_space(ctx, allgather_launcher);
-  }
-
-  print_flag = 0;
-  runtime->issue_execution_fence(ctx);
-  Future f_start = runtime->get_current_time_in_microseconds(ctx);
-  double ts_start = f_start.get_result<long long>();
-
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < 2; i++) {
     {
       IndexLauncher init_launcher(INIT_FIELD_TASK_ID, color_is, 
                                   TaskArgument(&print_flag, sizeof(int)), arg_map);
       init_launcher.add_region_requirement(
-          RegionRequirement(input_lp, 0/*projection ID*/, 
-                            READ_WRITE, EXCLUSIVE, input_lr));
+          RegionRequirement(input_lp[i], 0/*projection ID*/, 
+                            WRITE_DISCARD, EXCLUSIVE, input_lr[i]));
       init_launcher.region_requirements[0].add_field(FID_X);
       runtime->execute_index_space(ctx, init_launcher);
     }
+    print_flag = 0;
+  }
+
+  runtime->issue_execution_fence(ctx);
+  Future f_start = runtime->get_current_time_in_microseconds(ctx);
+  double ts_start = f_start.get_result<long long>();
+
+  for (int i = 0; i < num_iterations; i++) {
+    // {
+    //   IndexLauncher init_launcher(INIT_FIELD_TASK_ID, color_is, 
+    //                               TaskArgument(&print_flag, sizeof(int)), arg_map);
+    //   init_launcher.add_region_requirement(
+    //       RegionRequirement(in_lp, 0/*projection ID*/, 
+    //                         READ_WRITE, EXCLUSIVE, in_lr));
+    //   init_launcher.region_requirements[0].add_field(FID_X);
+    //   runtime->execute_index_space(ctx, init_launcher);
+    // }
 
     {
       IndexLauncher allgather_launcher(ALLGATHER_TASK_ID, color_is, 
                                           TaskArgument(&print_flag, sizeof(int)), arg_map);
       allgather_launcher.add_region_requirement(
-          RegionRequirement(input_lr, 0/*projection ID*/, 
-                              READ_ONLY, EXCLUSIVE, input_lr));
+          RegionRequirement(input_lr[i % 2], 0/*projection ID*/, 
+                            READ_ONLY, EXCLUSIVE, input_lr[i % 2]));
       allgather_launcher.region_requirements[0].add_field(FID_X);
+      allgather_launcher.add_region_requirement(
+        RegionRequirement(input_lp[(i+1) % 2], 0/*projection ID*/, 
+                          READ_WRITE, EXCLUSIVE, input_lr[(i+1) % 2]));
+      allgather_launcher.region_requirements[1].add_field(FID_X);
       runtime->execute_index_space(ctx, allgather_launcher);
     }
+    //runtime->issue_execution_fence(ctx);
   }
 
   runtime->issue_execution_fence(ctx);
@@ -133,8 +135,21 @@ void top_level_task(const Task *task,
   double sim_time = 1e-3 * (ts_end - ts_start);
   printf("ELAPSED TIME = %.3f ms\n", sim_time);
 
+#if 0
+  {
+    IndexLauncher check_launcher(CHECK_TASK_ID, color_is, 
+                                TaskArgument(NULL, 0), arg_map);
+    check_launcher.add_region_requirement(
+        RegionRequirement(input_lp[0], 0/*projection ID*/, 
+                          WRITE_DISCARD, EXCLUSIVE, input_lr[0]));
+    check_launcher.region_requirements[0].add_field(FID_X);
+    runtime->execute_index_space(ctx, check_launcher);
+  }
+#endif
 
-  runtime->destroy_logical_region(ctx, input_lr);
+  for (int i = 0; i < 2; i++) {
+    runtime->destroy_logical_region(ctx, input_lr[i]);
+  }
   runtime->destroy_field_space(ctx, input_fs);
   runtime->destroy_index_space(ctx, is);
   runtime->destroy_index_space(ctx, color_is);
@@ -152,17 +167,24 @@ void init_field_task(const Task *task,
   const int point = task->index_point.point_data[0];
   const int print_flag = *((const int*)task->args);
 
-  const FieldAccessor<WRITE_DISCARD,float,1,coord_t,
+  const FieldAccessor<READ_WRITE,float,1,coord_t,
         Realm::AffineAccessor<float,1,coord_t> > acc(regions[0], fid);
-  // Note here that we get the domain for the subregion for
-  // this task from the runtime which makes it safe for running
-  // both as a single task and as part of an index space of tasks.
+
   Rect<1> rect = runtime->get_index_space_domain(ctx,
                   task->regions[0].region.get_index_space());
   float* ptr = acc.ptr(rect.lo);
   if (print_flag) {
     printf("Initializing field %d for block %d, size %ld, pid " IDFMT "\n", fid, point, rect.volume(), task->current_proc.id);
   }
+#ifndef DRY_RUN
+  usleep(1000);
+#endif
+
+#if 0
+  for (size_t i = 0; i < rect.volume(); i++) {
+    ptr[i] = static_cast<float>(point);
+  }
+#endif
 
 }
 
@@ -170,26 +192,69 @@ void allgather_task(const Task *task,
                      const std::vector<PhysicalRegion> &regions,
                      Context ctx, Runtime *runtime)
 {
-  assert(regions.size() == 1); 
-  assert(task->regions.size() == 1);
+  assert(regions.size() == 2); 
+  assert(task->regions.size() == 2);
   assert(task->regions[0].privilege_fields.size() == 1);
 
   FieldID fid = *(task->regions[0].privilege_fields.begin());
   const int point = task->index_point.point_data[0];
   const int print_flag = *((const int*)task->args);
 
-  const FieldAccessor<WRITE_DISCARD,float,1,coord_t,
-        Realm::AffineAccessor<float,1,coord_t> > acc(regions[0], fid);
-  // Note here that we get the domain for the subregion for
-  // this task from the runtime which makes it safe for running
-  // both as a single task and as part of an index space of tasks.
-  Rect<1> rect = runtime->get_index_space_domain(ctx,
+  const FieldAccessor<READ_ONLY,float,1,coord_t,
+        Realm::AffineAccessor<float,1,coord_t> > acc_in(regions[0], fid);
+  const FieldAccessor<READ_WRITE,float,1,coord_t,
+        Realm::AffineAccessor<float,1,coord_t> > acc_out(regions[1], fid);
+
+  Rect<1> rect_in = runtime->get_index_space_domain(ctx,
                   task->regions[0].region.get_index_space());
-  float* ptr = acc.ptr(rect.lo);
+  Rect<1> rect_out = runtime->get_index_space_domain(ctx,
+                  task->regions[1].region.get_index_space());
   if (print_flag) {
-    printf("allgather field %d for block %d, buf %p, pid " IDFMT "\n", fid, point, ptr, task->current_proc.id);
+    printf("allgather field %d for block %d, pid " IDFMT "\n", fid, point, task->current_proc.id);
   }
 
+#ifndef DRY_RUN
+  usleep(1000);
+#endif
+
+ #if 0
+  const float* ptr_in = acc_in.ptr(rect_in.lo);
+  float* ptr_out = acc_out.ptr(rect_out.lo);
+  int nb_ranks = task->index_domain.get_volume();
+
+  assert(rect_in.volume() == rect_out.volume() * nb_ranks);
+  for (size_t i = 0; i < rect_out.volume(); i++) {
+    for (int j = 0; j < nb_ranks; j++) {
+      ptr_out[i] += ptr_in[i + j * rect_out.volume()];
+    }
+  }
+ #endif 
+
+}
+
+void check_task(const Task *task,
+                const std::vector<PhysicalRegion> &regions,
+                Context ctx, Runtime *runtime)
+{
+  assert(regions.size() == 1);
+  assert(task->regions.size() == 1);
+  const int point = task->index_point.point_data[0];
+
+  const FieldAccessor<READ_ONLY,float,1,coord_t,
+        Realm::AffineAccessor<float,1,coord_t> > acc(regions[0], FID_X);
+
+  Rect<1> rect = runtime->get_index_space_domain(ctx,
+                  task->regions[0].region.get_index_space());
+
+  const float *ptr = acc.ptr(rect.lo);
+
+  printf("point %d ", point);
+  for (size_t i = 0; i < rect.volume(); i++) {
+    printf("%.0f, ", ptr[i]);
+  }
+  printf("\n");
+
+  printf("Point %d SUCCESS!\n", point);
 }
 
 int main(int argc, char **argv)
@@ -215,6 +280,13 @@ int main(int argc, char **argv)
     registrar.add_constraint(ProcessorConstraint(Processor::TOC_PROC));
     registrar.set_leaf();
     Runtime::preregister_task_variant<allgather_task>(registrar, "allgather");
+  }
+
+  {
+    TaskVariantRegistrar registrar(CHECK_TASK_ID, "check");
+    registrar.add_constraint(ProcessorConstraint(Processor::TOC_PROC));
+    registrar.set_leaf();
+    Runtime::preregister_task_variant<check_task>(registrar, "check");
   }
 
   int val = Runtime::start(argc, argv);
