@@ -38,7 +38,7 @@ void top_level_task(const Task *task,
 {
   int num_subregions = 2;
   int count_per_subregion = 8;
-  int num_iterations = 9;
+  int num_iterations = 3;
   {
     const InputArgs &command_args = Runtime::get_input_args();
     for (int i = 1; i < command_args.argc; i++)
