@@ -52,7 +52,7 @@ GEN_GPU_SRC	?=				# .cu files
 INC_FLAGS	?=
 CC_FLAGS	?=
 ifeq ($(strip $(USE_GASNET)),1)
-CC_FLAGS	+= -DCOLL_USE_MPI
+CC_FLAGS	+= -DLEGATE_USE_GASNET
 endif
 ifeq ($(strip $(USE_CYCLIC_MAPPING)),1)
 CC_FLAGS	+= -DCYCLIC_MAPPING
