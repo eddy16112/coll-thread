@@ -26,19 +26,22 @@ USE_GASNET      ?= 1		# Include GASNet support (requires GASNet)
 USE_HDF         ?= 0		# Include HDF5 support (requires HDF5)
 ALT_MAPPERS     ?= 0		# Include alternative mappers (not recommended)
 #USE_SPY ?= 1
+USE_CUDART_HIJACK ?= 0
+
+LEGATE_DIR = /scratch2/wwu/install
 
 # Put the binary file name here
 OUTFILE		?= test 
 # List all the application source files here
-GEN_SRC		?= test.cc
+GEN_SRC		?= test.cc mymapper.cc
 GEN_GPU_SRC	?=				# .cu files
 
 # You can modify these variables, some will be appended to by the runtime makefile
-INC_FLAGS	?=
-CC_FLAGS	?=
-NVCC_FLAGS	?=
-GASNET_FLAGS	?=
-LD_FLAGS	?=
+# INC_FLAGS	?= -I${LEGATE_DIR}/include
+# CC_FLAGS	?= -std=c++17
+# NVCC_FLAGS	?=
+# GASNET_FLAGS	?=
+# LD_FLAGS	?= -L${LEGATE_DIR}/lib -llgcore -lnccl
 
 ###########################################################################
 #
