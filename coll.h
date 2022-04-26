@@ -1,3 +1,19 @@
+/* Copyright 2022 NVIDIA Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+
 #ifndef COLL_H
 #define COLL_H
 
@@ -37,16 +53,13 @@ typedef struct mapping_table_s {
   int *mpi_rank; // just for verification
   int *global_rank;
 } mapping_table_t;
-#else // NCCL and local
+#else // local
 typedef enum { 
   collChar       = 0,
   collInt        = 2,
   collUint32     = 3,
   collInt64      = 4,
   collUint64     = 5,
-#if 0
-  collHalf       = 6,
-#endif  
   collFloat      = 7,
   collDouble     = 8,
 } collDataType_t;
