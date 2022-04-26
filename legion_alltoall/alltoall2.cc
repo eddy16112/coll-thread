@@ -262,12 +262,13 @@ void top_level_task(const Task *task,
                                       TaskArgument(NULL, 0), arg_map);
   FutureMap mapping_table_future_map = runtime->execute_index_space(ctx, init_mapping_launcher);
 
-  mapping_table_future_map.wait_all_results();
-  size_t mapping_table_size = sizeof(int) * num_subregions;
-  int *mapping_table = (int *)malloc(mapping_table_size);
-  for (int i = 0; i < num_subregions; i++) {
-    mapping_table[i] = mapping_table_future_map.get_result<int>(i);
-  }
+  // mapping_table_future_map.wait_all_results();
+  // size_t mapping_table_size = sizeof(int) * num_subregions;
+  // int *mapping_table = (int *)malloc(mapping_table_size);
+  // for (int i = 0; i < num_subregions; i++) {
+  //   mapping_table[i] = mapping_table_future_map.get_result<int>(i);
+  // }
+
 
 #if 0
   IndexLauncher init_comm_cpu_launcher(INIT_COMM_CPU_TASK_ID, color_is, 
@@ -275,11 +276,13 @@ void top_level_task(const Task *task,
 #else
   IndexLauncher init_comm_cpu_launcher(INIT_COMM_CPU_TASK_ID, color_is, 
                                       TaskArgument(NULL, 0), arg_map);
-  Future mapping_table_f = Future::from_untyped_pointer(runtime, mapping_table, sizeof(int)*num_subregions);
-  init_comm_cpu_launcher.add_future(mapping_table_f);                                   
+  // Future mapping_table_f = Future::from_untyped_pointer(runtime, mapping_table, sizeof(int)*num_subregions);
+  for (int i = 0; i < num_subregions; i++) {
+    init_comm_cpu_launcher.add_future(mapping_table_future_map.get_future(i));
+  }                                   
 #endif
   FutureMap comm_future_map = runtime->execute_index_space(ctx, init_comm_cpu_launcher);
-  free(mapping_table);
+  // free(mapping_table);
 
   {
     IndexLauncher alltoall_launcher(ALLTOALL_TASK_ID, color_is,
@@ -395,7 +398,6 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
 #if 0
   const int* mapping_table = (const int*)task->args;
 #else
-  const int* mapping_table = (const int*)task->futures[0].get_buffer(Memory::SYSTEM_MEM);
 #endif
   printf("Init Comm for point %d pid " IDFMT ", index size %ld\n", 
         point, task->current_proc.id, task->index_domain.get_volume());
@@ -408,6 +410,14 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
   Coll_Comm *global_comm = (Coll_Comm*)malloc(sizeof(Coll_Comm));
   int global_rank = point;
   int global_comm_size = task->index_domain.get_volume();
+  assert(task->futures.size() == static_cast<size_t>(global_comm_size));
+  int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
+  for (int i = 0; i < global_comm_size; i++) {
+    const int* mapping_table_element = (const int*)task->futures[i].get_buffer(Memory::SYSTEM_MEM);
+    mapping_table[i] = *mapping_table_element;
+    //printf("%d ", mapping_table[i]);
+  }
+  //printf("\n");
 
  #if defined (LEGATE_USE_GASNET)
   collCommCreate(global_comm, global_comm_size, global_rank, mapping_table);
@@ -417,6 +427,7 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
 
   assert(mapping_table[point] == global_comm->mpi_rank);
   // assert(global_comm_size == rect_mapping.volume());
+  free(mapping_table);
   return global_comm;
 }
 
