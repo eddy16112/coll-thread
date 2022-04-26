@@ -6,7 +6,7 @@
 
 #include "coll.h"
 
-#define NTHREADS 8
+#define NTHREADS 1
 #define SEND_COUNT 80
 #define COLL_DTYPE collInt
 typedef int DTYPE;
@@ -41,7 +41,7 @@ void *thread_func(void *thread_args)
   collCommCreate(&global_comm, global_comm_size, global_rank, NULL);
 #endif
 
-#if 0
+#if 1
     // Define the buffer containing the values to send
     int* buffer_send;
     int buffer_send_length;

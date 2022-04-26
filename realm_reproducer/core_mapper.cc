@@ -212,13 +212,14 @@ Mapper::MapperSyncModel CoreMapper::get_mapper_sync_model(void) const
 void CoreMapper::select_task_options(const MapperContext ctx, const Task& task, TaskOptions& output)
 {
   // assert(context.valid_task_id(task.task_id));
-  if (task.tag == LEGATE_CPU_VARIANT) {
-    assert(!local_cpus.empty());
-    output.initial_proc = local_cpus.front();
-  } else {
-    assert(task.tag == LEGATE_GPU_VARIANT);
+  printf("task id %ld\n", task.task_id);
+  if (task.tag == LEGATE_GPU_VARIANT) {
     assert(!local_gpus.empty());
     output.initial_proc = local_gpus.front();
+  } else {
+    // assert(task.tag == LEGATE_GPU_VARIANT);
+    assert(!local_cpus.empty());
+    output.initial_proc = local_cpus.front();
   }
 }
 
@@ -289,7 +290,83 @@ void CoreMapper::map_task(const MapperContext ctx,
   // assert(context.valid_task_id(task.task_id));
   // Just put our target proc in the target processors for now
   output.target_procs.push_back(task.target_proc);
-  output.chosen_variant = task.tag;
+  std::vector<VariantID> variant_ids;
+  runtime->find_valid_variants(ctx, task.task_id, variant_ids, task.target_proc.kind());
+  // Currently assume there is exactly one variant
+  assert(variant_ids.size() == 1);
+  output.chosen_variant = variant_ids[0];
+  printf("map task task id %ld, pid " IDFMT "\n", task.task_id, task.target_proc);
+
+    // Find instances that still need to be mapped
+  std::vector<std::set<FieldID> > missing_fields(task.regions.size());
+  runtime->filter_instances(ctx, task, output.chosen_variant,
+      output.chosen_instances, missing_fields);
+  // Track which regions have already been mapped
+  std::vector<bool> done_regions(task.regions.size(), false);
+  if (!input.premapped_regions.empty())
+    for (std::vector<unsigned>::const_iterator it =
+          input.premapped_regions.begin(); it !=
+          input.premapped_regions.end(); it++)
+      done_regions[*it] = true;
+  // Now we need to go through and make instances for any of our
+  // regions which do not have space for certain fields
+  for (unsigned idx = 0; idx < task.regions.size(); idx++) {
+    if (done_regions[idx])
+      continue;
+    // Skip any empty regions
+    if ((task.regions[idx].privilege == LEGION_NO_ACCESS) ||
+        (task.regions[idx].privilege_fields.empty()) ||
+        missing_fields[idx].empty())
+      continue;
+    // Select a memory for the req
+    Memory target_mem = default_select_target_memory(ctx,
+        task.target_proc, task.regions[idx]);
+    // Assert no virtual mapping for now
+    assert((task.regions[idx].tag & DefaultMapper::VIRTUAL_MAP) == 0);
+    // Check to see if any of the valid instances satisfy the requirement
+    {
+      std::vector<PhysicalInstance> valid_instances;
+      for (std::vector<PhysicalInstance>::const_iterator
+             it = input.valid_instances[idx].begin(),
+             ie = input.valid_instances[idx].end(); it != ie; ++it)
+      {
+        if (it->get_location() == target_mem) {
+          // Only select instances with exact same index domain
+          Domain instance_domain = it->get_instance_domain();
+          Domain region_domain = runtime->get_index_space_domain(
+              ctx, task.regions[idx].region.get_index_space());
+          if (instance_domain.get_volume() == region_domain.get_volume()) 
+            valid_instances.push_back(*it);
+        }
+      }
+
+      std::set<FieldID> valid_missing_fields;
+      runtime->filter_instances(ctx, task, idx, output.chosen_variant,
+                                valid_instances, valid_missing_fields);
+      runtime->acquire_and_filter_instances(ctx, valid_instances);
+      output.chosen_instances[idx] = valid_instances;
+      missing_fields[idx] = valid_missing_fields;
+      if (missing_fields[idx].empty())
+        continue;
+    }
+    // Otherwise make nromal instances for the given region
+    LayoutConstraintID layout_id = default_select_layout_constraints(
+        ctx, target_mem, task.regions[idx], false/*needs constraint check*/);
+    const LayoutConstraintSet &constraint_set =
+        runtime->find_layout_constraints(ctx, layout_id);
+    size_t footprint;
+    PhysicalInstance result;
+    bool created;
+    if (!default_make_instance(ctx, target_mem, constraint_set,
+        result, true/*meet_constraints*/,
+        task.regions[idx], created, &footprint))
+    {
+      // Report failed to creation
+      assert(false);
+    } else {
+      output.chosen_instances[idx].push_back(result);
+    }
+  } //for idx
 }
 
 void CoreMapper::select_sharding_functor(const MapperContext ctx,
