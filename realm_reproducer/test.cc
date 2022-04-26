@@ -38,7 +38,7 @@ void top_level_task(const Task *task,
 {
   int num_subregions = 2;
   int count_per_subregion = 8;
-  int num_iterations = 9;
+  int num_iterations = 5;
   {
     const InputArgs &command_args = Runtime::get_input_args();
     for (int i = 1; i < command_args.argc; i++)
@@ -125,7 +125,7 @@ void top_level_task(const Task *task,
       allgather_launcher.region_requirements[1].add_field(FID_X);
       runtime->execute_index_space(ctx, allgather_launcher);
     }
-    //runtime->issue_execution_fence(ctx);
+    runtime->issue_execution_fence(ctx);
   }
 
   runtime->issue_execution_fence(ctx);
@@ -177,7 +177,7 @@ void init_field_task(const Task *task,
     printf("Initializing field %d for block %d, size %ld, pid " IDFMT "\n", fid, point, rect.volume(), task->current_proc.id);
   }
 #ifndef DRY_RUN
-  usleep(1000);
+  usleep(200000);
 #endif
 
 #if 0
@@ -214,7 +214,7 @@ void allgather_task(const Task *task,
   }
 
 #ifndef DRY_RUN
-  usleep(1000);
+  usleep(200000);
 #endif
 
  #if 0
@@ -257,6 +257,8 @@ void check_task(const Task *task,
   printf("Point %d SUCCESS!\n", point);
 }
 
+void register_legate_core_mapper(Machine machine, Runtime* runtime, const std::set<Processor> &local_proc);
+
 int main(int argc, char **argv)
 {
   Runtime::set_top_level_task_id(TOP_LEVEL_TASK_ID);
@@ -288,6 +290,8 @@ int main(int argc, char **argv)
     registrar.set_leaf();
     Runtime::preregister_task_variant<check_task>(registrar, "check");
   }
+
+  Runtime::add_registration_callback(register_legate_core_mapper);
 
   int val = Runtime::start(argc, argv);
   return val;
