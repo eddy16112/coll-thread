@@ -85,6 +85,7 @@ typedef struct Coll_Comm_s {
   int mpi_comm_size;
   int global_rank;
   int global_comm_size;
+  int unique_id;
   bool status;
 } Coll_Comm;
 

@@ -116,7 +116,7 @@ int collAlltoallv(const void *sendbuf, const int sendcounts[],
                   collComm_t global_comm)
 {
 #if defined(LEGATE_USE_GASNET)
-  printf("MPI Alltoallv: global_rank %d, total_size %d\n", global_comm->global_rank, global_comm->global_comm_size);
+  printf("MPI Alltoallv: global_rank %d, mpi_rank %d, total_size %d, unique_id %d\n", global_comm->global_rank, global_comm->mpi_rank, global_comm->global_comm_size, global_comm->unique_id);
   return collAlltoallvMPI(sendbuf, sendcounts,
                           sdispls, sendtype,
                           recvbuf, recvcounts,
