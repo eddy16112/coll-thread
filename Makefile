@@ -1,7 +1,11 @@
-DEBUG		?= 0
+DEBUG		?= 1
 COLL_NETWORKS	?= mpi
 
+ifeq ($(strip $(COLL_NETWORKS)),mpi)
 CXX				= mpicxx
+else
+CXX = g++
+endif
 AR				= ar
 CC_FLAGS	?=
 LD_FLAGS	?= -lpthread

@@ -44,8 +44,8 @@ extern MPI_Datatype collFloat;
 extern MPI_Datatype collDouble;
 
 typedef struct mapping_table_s {
-  int *mpi_rank;
-  int *global_rank;
+  volatile int *mpi_rank;
+  volatile int *global_rank;
 } mapping_table_t;
 
 #else
