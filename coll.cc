@@ -39,6 +39,8 @@ shared_data_t shared_data[MAX_NB_COMMS];
 
 static bool coll_local_inited = false;
 
+static int current_unique_id;
+
 size_t get_dtype_size(collDataType_t dtype)
 {
   if (dtype == collInt8 || dtype == collChar) {
@@ -129,7 +131,7 @@ int collAlltoallv(const void *sendbuf, const int sendcounts[],
                   const int rdispls[], collDataType_t recvtype, 
                   collComm_t global_comm)
 {
-  printf("Gather: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d\n", 
+  printf("Alltoallv: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d\n", 
          global_comm->global_rank, global_comm->mpi_rank, global_comm->unique_id, global_comm->global_comm_size);
 #if defined(LEGATE_USE_GASNET)
   return collAlltoallvMPI(sendbuf, sendcounts,
@@ -150,7 +152,7 @@ int collAlltoall(const void *sendbuf, int sendcount, collDataType_t sendtype,
                  void *recvbuf, int recvcount, collDataType_t recvtype, 
                  collComm_t global_comm)
 {
-  printf("Gather: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d\n", 
+  printf("Alltoall: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d\n", 
          global_comm->global_rank, global_comm->mpi_rank, global_comm->unique_id, global_comm->global_comm_size);
 #if defined(LEGATE_USE_GASNET)
   return collAlltoallMPI(sendbuf, sendcount, sendtype, 
@@ -215,6 +217,7 @@ int collBcast(void *buf, int count, collDataType_t type,
 // called from main thread
 int collInit(int argc, char *argv[])
 {
+  current_unique_id = 0;
 #if defined(LEGATE_USE_GASNET)
   int provided;
   return MPI_Init_thread(&argc,&argv, MPI_THREAD_MULTIPLE, &provided);
@@ -244,6 +247,14 @@ int collFinalize(void)
   coll_local_inited = false;
   return collSuccess;
 #endif
+}
+
+int collGetUniqueId(int* id) 
+{
+  *id = current_unique_id;
+  current_unique_id ++;
+  current_unique_id %= 10;
+  return collSuccess;
 }
 
 #ifndef LEGATE_USE_GASNET

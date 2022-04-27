@@ -132,6 +132,8 @@ int collInit(int argc, char *argv[]);
 
 int collFinalize(void);
 
+int collGetUniqueId(int* id);
+
 #if defined (LEGATE_USE_GASNET)
 int collAlltoallvMPI(const void *sendbuf, const int sendcounts[],
                      const int sdispls[], collDataType_t sendtype,
