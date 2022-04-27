@@ -307,20 +307,22 @@ void top_level_task(const Task *task,
   //   init_launcher.region_requirements[0].add_field(FID_Z);
   //   runtime->execute_index_space(ctx, init_launcher);
   // }
-  // {
-  //   IndexLauncher alltoall_launcher(ALLTOALL_TASK_ID, color_is,
-  //                                   TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
-  //   alltoall_launcher.point_futures.push_back(ArgumentMap(comm_future_map));
-  //   alltoall_launcher.add_region_requirement(
-  //       RegionRequirement(input_lp, 0/*projection ID*/,
-  //                         READ_ONLY, EXCLUSIVE, input_lr));
-  //   alltoall_launcher.region_requirements[0].add_field(FID_X);
-  //   alltoall_launcher.add_region_requirement(
-  //       RegionRequirement(output_lp, 0/*projection ID*/,
-  //                         WRITE_DISCARD, EXCLUSIVE, output_lr));
-  //   alltoall_launcher.region_requirements[1].add_field(FID_Z);
-  //   runtime->execute_index_space(ctx, alltoall_launcher);
-  // }
+  for (int i = 0; i  < 20; i ++) {
+  {
+    IndexLauncher alltoall_launcher(ALLTOALL_TASK_ID, color_is,
+                                    TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
+    alltoall_launcher.point_futures.push_back(ArgumentMap(comm_future_map));
+    alltoall_launcher.add_region_requirement(
+        RegionRequirement(input_lp, 0/*projection ID*/,
+                          READ_ONLY, EXCLUSIVE, input_lr));
+    alltoall_launcher.region_requirements[0].add_field(FID_X);
+    alltoall_launcher.add_region_requirement(
+        RegionRequirement(output_lp, 0/*projection ID*/,
+                          WRITE_DISCARD, EXCLUSIVE, output_lr));
+    alltoall_launcher.region_requirements[1].add_field(FID_Z);
+    runtime->execute_index_space(ctx, alltoall_launcher);
+  }
+  }
                     
   IndexLauncher check_launcher(CHECK_TASK_ID, color_is,
                                TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
@@ -481,6 +483,9 @@ void alltoall_task(const Task *task,
 
 //   assert(mapping_ptr[point] == global_comm.mpi_rank);
 //   assert(global_comm_size == rect_mapping.volume());
+// collAllgather((void*)sendbuf, 1, COLL_DTYPE, 
+//                 (void*)recvbuf, 1, COLL_DTYPE,
+//                 global_comm);
 
   collAlltoall((void*)sendbuf, task_arg.sendcount, COLL_DTYPE, 
                 (void*)recvbuf, task_arg.sendcount, COLL_DTYPE,

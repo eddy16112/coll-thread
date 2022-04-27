@@ -1,4 +1,4 @@
-DEBUG		?= 1
+DEBUG		?= 0
 COLL_NETWORKS	?= mpi
 
 CXX				= mpicxx
@@ -34,6 +34,8 @@ endif
 
 ifeq ($(strip $(DEBUG)),1)
 	CC_FLAGS	+= -g -O0
+else
+	CC_FLAGS	+= -O2
 endif
 
 ifeq ($(strip $(COLL_NETWORKS)),mpi)

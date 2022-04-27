@@ -50,9 +50,11 @@ void *thread_func(void *thread_args)
   collCommCreate(&global_comm, global_comm_size, global_rank, NULL);
 #endif
 
+  for (int i = 0; i < 30; i++) {
   collAllgather(args->sendbuf, args->sendcount, args->sendtype, 
                 args->recvbuf, args->recvcount, args->recvtype,
                 &global_comm);
+  }
   return NULL;
 }
  

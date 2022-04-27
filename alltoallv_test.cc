@@ -161,12 +161,13 @@ void *thread_func(void *thread_args)
   //   printf("%d ", sendbuf[i]);
   // }
   // printf("\n");
-  
-  collAlltoallv(sendbuf, sendcount,
-                sdispls, COLL_DTYPE,
-                recvbuf, recvcount,
-                rdispls, COLL_DTYPE, 
-                &global_comm);
+  for (int i = 0; i < 10; i++) {
+    collAlltoallv(sendbuf, sendcount,
+                  sdispls, COLL_DTYPE,
+                  recvbuf, recvcount,
+                  rdispls, COLL_DTYPE, 
+                  &global_comm);
+  }
   // if (global_rank == 0) {
   //   for (int i = 0; i < total_size; i++) {
   //     printf("%d ", recvbuf[i]);
