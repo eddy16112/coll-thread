@@ -407,7 +407,7 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
   // }
   // printf("\n");
 
-  Coll_Comm *global_comm = (Coll_Comm*)malloc(sizeof(Coll_Comm));
+  collComm_t global_comm = (collComm_t)malloc(sizeof(Coll_Comm));
   int global_rank = point;
   int global_comm_size = task->index_domain.get_volume();
   assert(task->futures.size() == static_cast<size_t>(global_comm_size));
@@ -493,15 +493,32 @@ void finalize_comm_cpu_task(const Task *task,
                             Context ctx, Runtime *runtime)
 {
   const int point = task->index_point.point_data[0];
-  Coll_Comm *global_comm = task->futures[0].get_result<Coll_Comm*>();
+  collComm_t global_comm = task->futures[0].get_result<collComm_t>();
 
   assert(global_comm->global_rank == point);
   assert(global_comm->status == true);
+
+#if 1
+  bool process_leader_flag = true;
+  int *mapping_table = global_comm->mapping_table.mpi_rank;
+  for (int i = 0; i < global_comm->global_comm_size; i++) {
+    if (mapping_table[i] == global_comm->mpi_rank && global_comm->global_rank > i) {
+      // the smallest rank is the process leader
+      process_leader_flag = false;
+      break;
+    }
+  }
+#endif
+  if (process_leader_flag) {
+    printf("Point %d, mpi rank %d, Finalize Done\n", point, global_comm->mpi_rank);
+  }
   
   collCommDestroy(global_comm);
   free(global_comm);
   global_comm = NULL;
-  printf("Point %d, Finalize Done\n", point);
+  if (process_leader_flag) {
+    collFinalize();
+  }
 }
 
 void check_task(const Task *task,
@@ -632,8 +649,6 @@ int main(int argc, char **argv)
   Runtime::add_registration_callback(mapper_registration);
 
   int val = Runtime::start(argc, argv);
-#ifdef LEGATE_USE_GASNET
-  MPI_Finalize();
-#endif
+  // collFinalize();
   return val;
 }
