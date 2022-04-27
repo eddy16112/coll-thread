@@ -39,8 +39,6 @@ shared_data_t shared_data[MAX_NB_COMMS];
 
 static bool coll_local_inited = false;
 
-static int current_unique_id;
-
 size_t get_dtype_size(collDataType_t dtype)
 {
   if (dtype == collInt8 || dtype == collChar) {
@@ -65,6 +63,8 @@ size_t get_dtype_size(collDataType_t dtype)
   }
 } 
 #endif
+
+static int current_unique_id;
 
 int collCommCreate(collComm_t global_comm, int global_comm_size, int global_rank, int unique_id, const int *mapping_table)
 {
