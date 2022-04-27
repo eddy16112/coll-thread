@@ -45,16 +45,17 @@ void *thread_func(void *thread_args)
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
   }
-  collCommCreate(&global_comm, global_comm_size, global_rank, mapping_table);
+  collCommCreate(&global_comm, global_comm_size, global_rank, 0, mapping_table);
 #else
-  collCommCreate(&global_comm, global_comm_size, global_rank, NULL);
+  collCommCreate(&global_comm, global_comm_size, global_rank, 0, NULL);
 #endif
 
-  for (int i = 0; i < 30; i++) {
+  for (int i = 0; i < 2; i++) {
   collAllgather(args->sendbuf, args->sendcount, args->sendtype, 
                 args->recvbuf, args->recvcount, args->recvtype,
                 &global_comm);
   }
+  collCommDestroy(&global_comm);
   return NULL;
 }
  
@@ -64,7 +65,7 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
-  collInit(argc, argv, NTHREADS);
+  collInit(argc, argv);
 
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  

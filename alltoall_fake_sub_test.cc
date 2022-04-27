@@ -65,7 +65,7 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
-  collInit(argc, argv, NTHREADS);
+  collInit(argc, argv);
 
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  

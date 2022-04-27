@@ -6,7 +6,7 @@
 
 #include "coll.h"
 
-#define NTHREADS 16
+#define NTHREADS 8
 #define SEND_COUNT 80
 #define COLL_DTYPE collInt
 typedef int DTYPE;
@@ -48,9 +48,9 @@ void *thread_func(void *thread_args)
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
   }
-  collCommCreate(&global_comm, global_comm_size, global_rank, mapping_table);
+  collCommCreate(&global_comm, global_comm_size, global_rank, 0, mapping_table);
 #else
-  collCommCreate(&global_comm, global_comm_size, global_rank, NULL);
+  collCommCreate(&global_comm, global_comm_size, global_rank, 0, NULL);
 #endif
 
 #if 0
@@ -184,6 +184,7 @@ void *thread_func(void *thread_args)
     }
   }
 #endif
+  collCommDestroy(&global_comm);
 
   return NULL;
 }
@@ -194,7 +195,7 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
-  collInit(0, NULL, NTHREADS);
+  collInit(0, NULL);
 
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  
@@ -207,8 +208,8 @@ int main( int argc, char *argv[] )
   MPI_Barrier(mpi_comm);
 #endif
 
-  pthread_t thread_id[NTHREADS];
-  thread_args_t args[NTHREADS];
+  pthread_t thread_id[NTHREADS*2];
+  thread_args_t args[NTHREADS*2];
 
   for (int i = 0; i < NTHREADS; i++) {
     args[i].mpi_rank = mpi_rank;
@@ -223,6 +224,22 @@ int main( int argc, char *argv[] )
   }
 
   for(int i = 0; i < NTHREADS; i++) {
+      pthread_join( thread_id[i], NULL); 
+  }
+
+    for (int i = 0; i < NTHREADS*2; i++) {
+    args[i].mpi_rank = mpi_rank;
+    args[i].mpi_comm_size = mpi_comm_size;
+    args[i].tid = i;
+    args[i].nb_threads = NTHREADS*2;
+ #if defined (LEGATE_USE_GASNET)
+    args[i].comm = mpi_comm;
+  #endif
+    pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
+    //thread_func((void *)&(args[i]));
+  }
+
+  for(int i = 0; i < NTHREADS*2; i++) {
       pthread_join( thread_id[i], NULL); 
   }
 

@@ -37,6 +37,7 @@ void *thread_func(void *thread_args)
   global_comm.mpi_comm_size = args->mpi_comm_size;
   global_comm.mpi_rank = args->mpi_rank;
   global_comm.global_rank = args->mpi_rank * args->nb_threads + args->tid;
+  global_comm.unique_id = 0;
 
  #if defined (LEGATE_USE_GASNET)
   global_comm.comm = args->comm;
@@ -53,7 +54,7 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
-  collInit(argc, argv, NTHREADS);
+  collInit(argc, argv);
 
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  
