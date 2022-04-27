@@ -33,6 +33,7 @@ enum TaskIDs {
   INIT_MAPPING_TASK_ID,
   INIT_COMM_CPU_TASK_ID,
   FINALIZE_COMM_CPU_TASK_ID,
+  INIT_UID_TASK_ID,
 };
 
 enum FieldIDs {
@@ -245,8 +246,7 @@ void top_level_task(const Task *task,
   LogicalPartition mapping_lp = runtime->get_logical_partition(ctx, mapping_lr, mapping_ip);
   runtime->attach_name(mapping_lp, "mapping_lp");
 
-  // Create our launch domain.  Note that is the same as color domain
-  // as we are going to launch one task for each subregion we created.
+
   ArgumentMap arg_map;
   {
     IndexLauncher init_launcher(INIT_FIELD_TASK_ID, color_is, 
@@ -257,6 +257,11 @@ void top_level_task(const Task *task,
     init_launcher.region_requirements[0].add_field(FID_X);
     runtime->execute_index_space(ctx, init_launcher);
   }
+
+  TaskLauncher init_unique_id_launcher(INIT_UID_TASK_ID, TaskArgument(NULL, 0));
+  Future unique_id_future = runtime->execute_task(ctx, init_unique_id_launcher);
+
+  runtime->issue_execution_fence(ctx);
 
   IndexLauncher init_mapping_launcher(INIT_MAPPING_TASK_ID, color_is, 
                                       TaskArgument(NULL, 0), arg_map);
@@ -279,7 +284,8 @@ void top_level_task(const Task *task,
   // Future mapping_table_f = Future::from_untyped_pointer(runtime, mapping_table, sizeof(int)*num_subregions);
   for (int i = 0; i < num_subregions; i++) {
     init_comm_cpu_launcher.add_future(mapping_table_future_map.get_future(i));
-  }                                   
+  }
+  init_comm_cpu_launcher.add_future(unique_id_future);                                
 #endif
   FutureMap comm_future_map = runtime->execute_index_space(ctx, init_comm_cpu_launcher);
   // free(mapping_table);
@@ -381,6 +387,16 @@ void init_field_task(const Task *task,
 #endif
 }
 
+int init_uid_task(const Task *task,
+                     const std::vector<PhysicalRegion> &regions,
+                     Context ctx, Runtime *runtime)
+{
+  int unique_id = 0;
+  collGetUniqueId(&unique_id);
+  unique_id ++;
+  return unique_id;
+}
+
 int init_mapping_task(const Task *task,
                      const std::vector<PhysicalRegion> &regions,
                      Context ctx, Runtime *runtime)
@@ -412,7 +428,7 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
   collComm_t global_comm = (collComm_t)malloc(sizeof(Coll_Comm));
   int global_rank = point;
   int global_comm_size = task->index_domain.get_volume();
-  assert(task->futures.size() == static_cast<size_t>(global_comm_size));
+  assert(task->futures.size() == (static_cast<size_t>(global_comm_size) + 1));
   int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
   for (int i = 0; i < global_comm_size; i++) {
     const int* mapping_table_element = (const int*)task->futures[i].get_buffer(Memory::SYSTEM_MEM);
@@ -421,10 +437,13 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
   }
   //printf("\n");
 
+  const int* unique_id = (const int*)task->futures[global_comm_size].get_buffer(Memory::SYSTEM_MEM);
+  assert(*unique_id == 1);
+
  #if defined (LEGATE_USE_GASNET)
-  collCommCreate(global_comm, global_comm_size, global_rank, mapping_table);
+  collCommCreate(global_comm, global_comm_size, global_rank, *unique_id, mapping_table);
 #else
-  collCommCreate(global_comm, global_comm_size, global_rank, NULL);
+  collCommCreate(global_comm, global_comm_size, global_rank, *unique_id, NULL);
 #endif
 
   assert(mapping_table[point] == global_comm->mpi_rank);
@@ -615,6 +634,12 @@ int main(int argc, char **argv)
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     registrar.set_leaf();
     Runtime::preregister_task_variant<init_field_task>(registrar, "init_field");
+  }
+
+  {
+    TaskVariantRegistrar registrar(INIT_UID_TASK_ID, "init_uid");
+    registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
+    Runtime::preregister_task_variant<int, init_uid_task>(registrar, "init_uid");
   }
 
   {
