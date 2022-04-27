@@ -45,8 +45,6 @@ void *thread_func(void *thread_args)
     Coll_Comm global_comm;
     global_comm.mpi_comm_size = args->mpi_comm_size;
     global_comm.mpi_rank = args->mpi_rank;
-    global_comm.nb_threads = args->nb_threads;
-    global_comm.tid = args->tid;
     global_comm.global_rank = global_rank;
     global_comm.global_comm_size = args->global_comm_size; 
 
