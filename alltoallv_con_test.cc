@@ -6,7 +6,7 @@
 
 #include "coll.h"
 
-#define NTHREADS 4
+#define NTHREADS 8
 #define NB_GROUPS 2
 #define SEND_COUNT 800
 #define COLL_DTYPE collInt
@@ -97,12 +97,12 @@ void *thread_func(void *thread_args)
     //   recvbuf[i] = global_rank;
     // }
 
-    if (global_rank == 0) {
-      for (int i = 0; i < global_comm_size; i++) {
-        printf("%d ", rdispls[i]);
-      }
-      printf("\n");
-    }
+    // if (global_rank == 0) {
+    //   for (int i = 0; i < global_comm_size; i++) {
+    //     printf("%d ", rdispls[i]);
+    //   }
+    //   printf("\n");
+    // }
 
     printf("global rank %d, recv total size %d , send size %d\n", global_rank, total_size, seg_size * global_comm_size);
     // for (int i = 0; i < seg_size * global_comm_size; i++) {
@@ -116,12 +116,12 @@ void *thread_func(void *thread_args)
                     rdispls, COLL_DTYPE, 
                     &global_comm);
     }
-    if (global_rank == 0) {
-      for (int i = 0; i < total_size; i++) {
-        printf("%d ", recvbuf[i]);
-      }
-      printf("\n");
-    }
+    // if (global_rank == 0) {
+    //   for (int i = 0; i < total_size; i++) {
+    //     printf("%d ", recvbuf[i]);
+    //   }
+    //   printf("\n");
+    // }
     for (int i = 0; i < global_comm_size; i++) {
       DTYPE *tmp_recv = recvbufs[i];
       for (int j = 0; j < recvcount[i]; j++) {
@@ -191,12 +191,12 @@ void *thread_func(void *thread_args)
                   rdispls, COLL_DTYPE, 
                   &global_comm);
 
-  if (global_rank == 1) {
-    for (int i = 0; i < seg_size * global_comm_size; i++) {
-      printf("%d ", recvbuf[i]);
-    }
-    printf("\n");
-  }
+  // if (global_rank == 1) {
+  //   for (int i = 0; i < seg_size * global_comm_size; i++) {
+  //     printf("%d ", recvbuf[i]);
+  //   }
+  //   printf("\n");
+  // }
 #else
     int *sbuf, *rbuf;
     int *sendcounts, *recvcounts, *rdispls, *sdispls;
