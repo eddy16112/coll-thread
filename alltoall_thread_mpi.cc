@@ -63,8 +63,8 @@ int collAlltoallMPI(const void *sendbuf, int sendcount, collDataType_t sendtype,
     assert(sendto_global_rank == global_comm->mapping_table.global_rank[sendto_global_rank]);
     assert(recvfrom_global_rank == global_comm->mapping_table.global_rank[recvfrom_global_rank]);
     // tag: seg idx + rank_idx + tag
-    int send_tag = ((sendto_global_rank * 10000 + global_rank) * 10 + ALLTOALL_TAG) * 10 + global_comm->unique_id; // which dst seg it sends to (in dst rank)
-    int recv_tag = ((global_rank * 10000 + recvfrom_global_rank) * 10 + ALLTOALL_TAG) * 10 + global_comm->unique_id; // idx of current seg we are receving (in src/my rank)
+    int send_tag = collGenerateAlltoallTag(sendto_global_rank, global_rank, global_comm);
+    int recv_tag = collGenerateAlltoallTag(global_rank, recvfrom_global_rank, global_comm);
 #ifdef DEBUG_PRINT
     printf("i: %d === global_rank %d, mpi rank %d, send %d to %d, send_tag %d, recv %d from %d, recv_tag %d\n", 
       i, global_rank, global_comm->mpi_rank, 
@@ -79,8 +79,8 @@ int collAlltoallMPI(const void *sendbuf, int sendcount, collDataType_t sendtype,
     char* src = (char*)sendbuf_tmp + i * sendtype_extent * sendcount;
     char* dst = (char*)recvbuf + i * recvtype_extent * recvcount;
     dest_mpi_rank = global_comm->mapping_table.mpi_rank[i];
-    int send_tag = ((i % global_comm->nb_threads * 10000 + global_rank) * 10 + ALLTOALL_TAG) * 10 + global_comm->unique_id; // which seg it sends to
-    int recv_tag = ((global_rank % global_comm->nb_threads * 10000 + i) * 10 + ALLTOALL_TAG) * 10 + global_comm->unique_id; // idx of current seg
+    int send_tag = collGenerateAlltoallTag(i, global_rank, global_comm);
+    int recv_tag = collGenerateAlltoallTag(global_rank, i, global_comm);
 #ifdef DEBUG_PRINT
     printf("i: %d === global_rank %d, mpi rank %d, send %d to %d, send_tag %d, recv %d from %d, recv_tag %d\n", 
       i, global_rank, global_comm->mpi_rank, i, dest_mpi_rank, send_tag, i, dest_mpi_rank, recv_tag);
@@ -94,7 +94,7 @@ int collAlltoallMPI(const void *sendbuf, int sendcount, collDataType_t sendtype,
 	for(int i = 0 ; i < total_size; i++) {
     char* src = (char*)sendbuf_tmp + i * sendtype_extent * sendcount;
     dest_mpi_rank = global_comm->mapping_table.mpi_rank[i];
-    tag = ((i * 10000 + global_rank) * 10 + ALLTOALL_TAG) * 10 + global_comm->unique_id;
+    tag = collGenerateAlltoallTag(i, global_rank, global_comm);
     res = MPI_Send(src, sendcount, sendtype, dest_mpi_rank, tag, global_comm->comm);
     assert(res == MPI_SUCCESS);
 #ifdef DEBUG_PRINT
@@ -106,7 +106,7 @@ int collAlltoallMPI(const void *sendbuf, int sendcount, collDataType_t sendtype,
   for(int i = 0 ; i < total_size; i++) {
     char* dst = (char*)recvbuf + i * recvtype_extent * recvcount;
     dest_mpi_rank = global_comm->mapping_table.mpi_rank[i];
-    tag = ((global_rank * 10000 + i) * 10 + ALLTOALL_TAG) * 10 + global_comm->unique_id;
+    tag = collGenerateAlltoallTag(global_rank, i, global_comm);
 #ifdef DEBUG_PRINT
     printf("i: %d === global_rank %d, mpi rank %d, recv %d from %d, recv_tag %d\n", 
       i, global_rank, global_comm->mpi_rank, i, dest_mpi_rank, tag);

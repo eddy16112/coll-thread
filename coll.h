@@ -158,6 +158,14 @@ int collAllgatherMPI(const void *sendbuf, int sendcount, collDataType_t sendtype
 int collBcastMPI(void *buf, int count, collDataType_t type, 
                  int root,
                  collComm_t global_comm);
+
+int collGenerateAlltoallTag(int rank1, int rank2, collComm_t global_comm);
+
+int collGenerateAlltoallvTag(int rank1, int rank2, collComm_t global_comm);
+
+int collGenerateBcastTag(int rank, collComm_t global_comm);
+
+int collGenerateGatherTag(int rank, collComm_t global_comm);
 #else
 size_t get_dtype_size(collDataType_t dtype);
 
