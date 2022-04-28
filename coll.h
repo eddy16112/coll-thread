@@ -26,10 +26,13 @@
 
 #if defined (LEGATE_USE_GASNET)
 #include <mpi.h>
+
 #define BCAST_TAG     0
 #define GATHER_TAG    1
 #define ALLTOALL_TAG  2
 #define ALLTOALLV_TAG 3
+
+#define MAX_COLL_TYPES 10
 
 typedef MPI_Datatype collDataType_t;
 // TODO: fix it

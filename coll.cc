@@ -278,22 +278,23 @@ int collGenerateAlltoallvTag(int rank1, int rank2, collComm_t global_comm)
   // int send_tag = ((sendto_global_rank * 10000 + global_rank) * 10 + ALLTOALLV_TAG) * 10 + global_comm->unique_id; // which dst seg it sends to (in dst rank)
   // int recv_tag = ((global_rank * 10000 + recvfrom_global_rank) * 10 + ALLTOALLV_TAG) * 10 + global_comm->unique_id; // idx of current seg we are receving (in src/my rank)
 #if 1
-  int tag = ((rank1 * 10000 + rank2) * 10 + ALLTOALLV_TAG) * 10 + global_comm->unique_id;
+  int tag = ((rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALLV_TAG) * 10 + global_comm->unique_id;
 #else
-  int tag = ((rank1 % global_comm->nb_threads * 10000 + rank2) * 10 + ALLTOALLV_TAG) * 10 + global_comm->unique_id;
+  int tag = ((rank1 % global_comm->nb_threads * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALLV_TAG) * 10 + global_comm->unique_id;
 #endif
   return tag;
 }
 
 int collGenerateBcastTag(int rank, collComm_t global_comm)
 {
- int tag = (rank * 10 + BCAST_TAG) * 10 + global_comm->unique_id;
+ int tag = (rank * MAX_COLL_TYPES + BCAST_TAG) * 10 + global_comm->unique_id;
  return tag;
 }
 
 int collGenerateGatherTag(int rank, collComm_t global_comm)
 {
-  int tag = (rank * 10 + GATHER_TAG) * 10 + global_comm->unique_id;
+  int tag = (rank * MAX_COLL_TYPES + GATHER_TAG) * 10 + global_comm->unique_id;
+  return tag;
 }
 
 #else
