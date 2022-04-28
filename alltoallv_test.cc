@@ -6,7 +6,7 @@
 
 #include "coll.h"
 
-#define NTHREADS 8
+#define NTHREADS 4
 #define SEND_COUNT 80
 #define COLL_DTYPE collInt
 typedef int DTYPE;

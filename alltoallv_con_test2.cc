@@ -6,8 +6,8 @@
 
 #include "coll.h"
 
-#define NTHREADS 2
-#define NB_GROUPS 1
+#define NTHREADS 4
+#define NB_GROUPS 4
 #define SEND_COUNT 800
 #define COLL_DTYPE collInt
 typedef int DTYPE;
@@ -19,7 +19,6 @@ typedef struct thread_args_s {
   int nb_threads;
   int mpi_rank;
   int tid;
-  int group_id;
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm comm;
 #endif
@@ -30,17 +29,23 @@ void *thread_func(void *thread_args)
   thread_args_t *args = (thread_args_t*)thread_args;
 
   Coll_Comm global_comm;
-  int global_rank = args->mpi_rank * args->nb_threads + args->tid;
-  int global_comm_size = args->mpi_comm_size * args->nb_threads;
+
+  int total_size = args->mpi_comm_size * args->nb_threads;
+  int global_global_rank = args->mpi_rank * args->nb_threads + args->tid;
+  int global_comm_size = total_size / NB_GROUPS;
+  int global_rank = global_global_rank % global_comm_size;
+  int group_id = global_global_rank / global_comm_size;
+  assert(group_id < NB_GROUPS);
+  int nb_mpi_ranks_per_group = args->mpi_comm_size / NB_GROUPS;
 
   #if defined (LEGATE_USE_GASNET)
   int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
   for (int i = 0; i < global_comm_size; i++) {
-    mapping_table[i] = i / args->nb_threads;
+    mapping_table[i] = i / args->nb_threads + group_id * nb_mpi_ranks_per_group;
   }
-  collCommCreate(&global_comm, global_comm_size, global_rank, args->group_id, mapping_table);
+  collCommCreate(&global_comm, global_comm_size, global_rank, group_id, mapping_table);
 #else
-  collCommCreate(&global_comm, global_comm_size, global_rank, args->group_id, NULL);
+  collCommCreate(&global_comm, global_comm_size, global_rank, group_id, NULL);
 #endif
 
   if (global_comm.unique_id %2 == 0) {
@@ -274,21 +279,14 @@ int main( int argc, char *argv[] )
   MPI_Barrier(mpi_comm);
 #endif
 
-  pthread_t thread_id[NTHREADS*NB_GROUPS];
-  thread_args_t args[NTHREADS*NB_GROUPS];
+  pthread_t thread_id[NTHREADS];
+  thread_args_t args[NTHREADS];
 
-  int group_id[NB_GROUPS];
-  for (int i = 0; i < NB_GROUPS; i++) {
-    collGetUniqueId(&(group_id[i]));
-    assert(group_id[i] == i);
-  }
-
-  for (int i = 0; i < NTHREADS*NB_GROUPS; i++) {
+  for (int i = 0; i < NTHREADS; i++) {
     args[i].mpi_rank = mpi_rank;
     args[i].mpi_comm_size = mpi_comm_size;
     args[i].tid = i % NTHREADS;
     args[i].nb_threads = NTHREADS;
-    args[i].group_id = i / NTHREADS;
  #if defined (LEGATE_USE_GASNET)
     args[i].comm = mpi_comm;
   #endif
@@ -296,7 +294,7 @@ int main( int argc, char *argv[] )
     //thread_func((void *)&(args[i]));
   }
 
-  for(int i = 0; i < NTHREADS*NB_GROUPS; i++) {
+  for(int i = 0; i < NTHREADS; i++) {
       pthread_join( thread_id[i], NULL); 
   }
 
