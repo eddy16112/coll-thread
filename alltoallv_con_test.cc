@@ -6,8 +6,8 @@
 
 #include "coll.h"
 
-#define NTHREADS 2
-#define NB_GROUPS 1
+#define NTHREADS 4
+#define NB_GROUPS 4
 #define SEND_COUNT 800
 #define COLL_DTYPE collInt
 typedef int DTYPE;
