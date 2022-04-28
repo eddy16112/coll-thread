@@ -261,8 +261,6 @@ void top_level_task(const Task *task,
   TaskLauncher init_unique_id_launcher(INIT_UID_TASK_ID, TaskArgument(NULL, 0));
   Future unique_id_future = runtime->execute_task(ctx, init_unique_id_launcher);
 
-  runtime->issue_execution_fence(ctx);
-
   IndexLauncher init_mapping_launcher(INIT_MAPPING_TASK_ID, color_is, 
                                       TaskArgument(NULL, 0), arg_map);
   FutureMap mapping_table_future_map = runtime->execute_index_space(ctx, init_mapping_launcher);
@@ -282,12 +280,13 @@ void top_level_task(const Task *task,
   IndexLauncher init_comm_cpu_launcher(INIT_COMM_CPU_TASK_ID, color_is, 
                                       TaskArgument(NULL, 0), arg_map);
   // Future mapping_table_f = Future::from_untyped_pointer(runtime, mapping_table, sizeof(int)*num_subregions);
+  init_comm_cpu_launcher.add_future(unique_id_future);
   for (int i = 0; i < num_subregions; i++) {
     init_comm_cpu_launcher.add_future(mapping_table_future_map.get_future(i));
-  }
-  init_comm_cpu_launcher.add_future(unique_id_future);                                
+  }                            
 #endif
   FutureMap comm_future_map = runtime->execute_index_space(ctx, init_comm_cpu_launcher);
+  runtime->issue_execution_fence(ctx);
   // free(mapping_table);
 
   {
@@ -429,26 +428,24 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
   int global_rank = point;
   int global_comm_size = task->index_domain.get_volume();
   assert(task->futures.size() == (static_cast<size_t>(global_comm_size) + 1));
+  const int* unique_id = (const int*)task->futures[0].get_buffer(Memory::SYSTEM_MEM);
+  assert(*unique_id == 1);
+ #if defined (LEGATE_USE_GASNET)
   int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
   for (int i = 0; i < global_comm_size; i++) {
-    const int* mapping_table_element = (const int*)task->futures[i].get_buffer(Memory::SYSTEM_MEM);
+    const int* mapping_table_element = (const int*)task->futures[i+1].get_buffer(Memory::SYSTEM_MEM);
     mapping_table[i] = *mapping_table_element;
     //printf("%d ", mapping_table[i]);
   }
   //printf("\n");
-
-  const int* unique_id = (const int*)task->futures[global_comm_size].get_buffer(Memory::SYSTEM_MEM);
-  assert(*unique_id == 1);
-
- #if defined (LEGATE_USE_GASNET)
   collCommCreate(global_comm, global_comm_size, global_rank, *unique_id, mapping_table);
+  assert(mapping_table[point] == global_comm->mpi_rank);
+  // assert(global_comm_size == rect_mapping.volume());
+  free(mapping_table);
 #else
   collCommCreate(global_comm, global_comm_size, global_rank, *unique_id, NULL);
 #endif
 
-  assert(mapping_table[point] == global_comm->mpi_rank);
-  // assert(global_comm_size == rect_mapping.volume());
-  free(mapping_table);
   return global_comm;
 }
 
@@ -523,7 +520,7 @@ void finalize_comm_cpu_task(const Task *task,
   assert(global_comm->global_rank == point);
   assert(global_comm->status == true);
 
-#if 1
+#if 0
   bool process_leader_flag = true;
   int *mapping_table = global_comm->mapping_table.mpi_rank;
   for (int i = 0; i < global_comm->global_comm_size; i++) {
@@ -534,16 +531,16 @@ void finalize_comm_cpu_task(const Task *task,
     }
   }
 #endif
-  if (process_leader_flag) {
-    printf("Point %d, mpi rank %d, Finalize Done\n", point, global_comm->mpi_rank);
-  }
+  // if (process_leader_flag) {
+  //   printf("Point %d, mpi rank %d, Finalize Done\n", point, global_comm->mpi_rank);
+  // }
   
   collCommDestroy(global_comm);
   free(global_comm);
   global_comm = NULL;
-  if (process_leader_flag) {
-    collFinalize();
-  }
+  // if (process_leader_flag) {
+  //   collFinalize();
+  // }
 }
 
 void check_task(const Task *task,
@@ -616,11 +613,7 @@ int main(int argc, char **argv)
 {
   Runtime::set_top_level_task_id(TOP_LEVEL_TASK_ID);
 
-#ifdef LEGATE_USE_GASNET
-  int provided;
- 
-  MPI_Init_thread(&argc,&argv, MPI_THREAD_MULTIPLE, &provided);
-#endif
+  collInit(0, NULL);
 
   {
     TaskVariantRegistrar registrar(TOP_LEVEL_TASK_ID, "top_level");
@@ -680,6 +673,6 @@ int main(int argc, char **argv)
   Runtime::add_registration_callback(mapper_registration);
 
   int val = Runtime::start(argc, argv);
-  // collFinalize();
+  collFinalize();
   return val;
 }

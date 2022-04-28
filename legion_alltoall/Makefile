@@ -40,7 +40,7 @@ GEN_SRC		?= alltoall2.cc	\
 			   ../gather_thread_mpi.cc \
 			   ../bcast_thread_mpi.cc
 else
-GEN_SRC		?= alltoall.cc	\
+GEN_SRC		?= alltoall2.cc	\
 			   ../coll.cc \
 			   ../alltoall_thread_local.cc	\
 			   ../alltoallv_thread_local.cc	\
