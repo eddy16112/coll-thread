@@ -6,12 +6,14 @@
 
 #include "coll.h"
 
-#define NTHREADS 4
+#define NTHREADS 8
 #define SEND_COUNT 80
 #define COLL_DTYPE collInt
 typedef int DTYPE;
 
 #define VERIFICATION_2
+
+//#define INPLACE
 
 typedef struct thread_args_s {
   int mpi_comm_size;
@@ -109,10 +111,36 @@ void *thread_func(void *thread_args)
 #else
 
   int seg_size = global_rank + 1;
+  collAllgather(&seg_size, 1, collInt, 
+              recvcount, 1, collInt, 
+              &global_comm);
+  
+  for (int i = 0; i < global_comm_size; i++) {
+    assert(recvcount[i] == i + 1); 
+    // recvcount[i] = i + 1;
+  }
+
+  // calculate recv size
+  int total_size = 0;
+  for (int i = 0; i < global_comm_size; i++) {
+    total_size += (i+1);
+  }
+
+ #ifndef INPLACE
   sendbuf = (DTYPE *)malloc(sizeof(DTYPE) * seg_size * global_comm_size);
+ #else
+  // test inplace
+  size_t max_size = seg_size * global_comm_size;
+  if (total_size > max_size) {
+    max_size = total_size;
+  }
+  sendbuf = (DTYPE *)malloc(sizeof(DTYPE) * max_size);
+#endif 
   for (int i = 0; i < seg_size * global_comm_size; i++) {
     sendbuf[i] = global_rank;
+    //printf("%d ", sendbuf[i]);
   }
+  //printf("\n");
 
   for (int i = 0; i < global_comm_size; i++) {
     sendbufs[i] = sendbuf + i * seg_size;
@@ -120,21 +148,12 @@ void *thread_func(void *thread_args)
     sdispls[i] = i * seg_size;
   }
 
-  collAllgather(&seg_size, 1, collInt, 
-                recvcount, 1, collInt, 
-                &global_comm);
-  
-  for (int i = 0; i < global_comm_size; i++) {
-    assert(recvcount[i] == i + 1); 
-    // recvcount[i] = i + 1;
-  }
-
-  int total_size = 0;
-  for (int i = 0; i < global_comm_size; i++) {
-    total_size += (i+1);
-  }
   recvbuf = (DTYPE *)malloc(sizeof(DTYPE) * total_size);
+#ifndef INPLACE
   DTYPE *tmpbuf = recvbuf;
+#else
+  DTYPE *tmpbuf = sendbuf;
+#endif
   int tmp_seg_size;
   int roffset = 0;
   for (int i = 0; i < global_comm_size; i++) {
@@ -149,24 +168,32 @@ void *thread_func(void *thread_args)
   //   recvbuf[i] = global_rank;
   // }
 
-  if (global_rank == 0) {
-    for (int i = 0; i < global_comm_size; i++) {
-      printf("%d ", rdispls[i]);
-    }
-    printf("\n");
-  }
+  // if (global_rank == 0) {
+  //   for (int i = 0; i < global_comm_size; i++) {
+  //     printf("%d ", rdispls[i]);
+  //   }
+  //   printf("\n");
+  // }
 
   printf("global rank %d, recv total size %d , send size %d\n", global_rank, total_size, seg_size * global_comm_size);
   // for (int i = 0; i < seg_size * global_comm_size; i++) {
   //   printf("%d ", sendbuf[i]);
   // }
   // printf("\n");
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 1; i++) {
+#ifndef INPLACE
     collAlltoallv(sendbuf, sendcount,
                   sdispls, COLL_DTYPE,
                   recvbuf, recvcount,
                   rdispls, COLL_DTYPE, 
                   &global_comm);
+#else
+    collAlltoallv(sendbuf, sendcount,
+                  sdispls, COLL_DTYPE,
+                  sendbuf, recvcount,
+                  rdispls, COLL_DTYPE, 
+                  &global_comm);
+#endif
   }
   // if (global_rank == 0) {
   //   for (int i = 0; i < total_size; i++) {
