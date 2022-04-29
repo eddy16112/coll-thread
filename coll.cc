@@ -94,14 +94,23 @@ int collCommCreate(collComm_t global_comm,
 #else
   global_comm->mpi_comm_size = 1;
   global_comm->mpi_rank      = 0;
-  shared_data_t* data        = shared_data[global_comm->unique_id];
   if (global_comm->global_rank == 0) {
+    shared_data_t* data = shared_data[global_comm->unique_id];
+    data                = (shared_data_t*)malloc(sizeof(shared_data_t));
+    shared_buffer_t* buffer = &(data->shared_buffer);
+    for (int j = 0; j < MAX_NB_THREADS; j++) {
+      buffer->buffers[j]       = NULL;
+      buffer->displs[j]        = NULL;
+      buffer->buffers_ready[j] = false;
+    }
     pthread_barrier_init(&(data->barrier), NULL, global_comm->global_comm_size);
-    data->ready_flag = true;
+    data->ready_flag                    = true;
+    shared_data[global_comm->unique_id] = data;
   }
   __sync_synchronize();
-  while (data->ready_flag == false)
+  while (shared_data[global_comm->unique_id] == NULL)
     ;
+  assert(shared_data[global_comm->unique_id]->ready_flag == true);
 #endif
   if (global_comm->global_comm_size % global_comm->mpi_comm_size == 0) {
     global_comm->nb_threads = global_comm->global_comm_size / global_comm->mpi_comm_size;
@@ -123,13 +132,15 @@ int collCommDestroy(collComm_t global_comm)
     global_comm->mapping_table.mpi_rank = NULL;
   }
 #else
-  shared_data_t* data = shared_data[global_comm->unique_id];
   if (global_comm->global_rank == 0) {
+    shared_data_t* data = shared_data[global_comm->unique_id];
     pthread_barrier_destroy(&(data->barrier));
     data->ready_flag = false;
+    free(data);
+    shared_data[global_comm->unique_id] = NULL;
   }
   __sync_synchronize();
-  while (data->ready_flag == true)
+  while (shared_data[global_comm->unique_id] != NULL)
     ;
 #endif
   global_comm->status = false;
@@ -243,15 +254,7 @@ int collInit(int argc, char* argv[])
   return MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
 #else
   for (int i = 0; i < MAX_NB_COMMS; i++) {
-    shared_data_t* data = (shared_data_t*)malloc(sizeof(shared_data_t));
-    data->ready_flag    = false;
-    shared_data[i]      = data;
-    shared_buffer_t* buffer = &(data->shared_buffer);
-    for (int j = 0; j < MAX_NB_THREADS; j++) {
-      buffer->buffers[j]       = NULL;
-      buffer->displs[j]        = NULL;
-      buffer->buffers_ready[j] = false;
-    }
+    shared_data[i] = NULL;
   }
 
   coll_local_inited = true;
@@ -265,6 +268,9 @@ int collFinalize(void)
   return MPI_Finalize();
 #else
   assert(coll_local_inited == true);
+  for (int i = 0; i < MAX_NB_COMMS; i++) {
+    assert(shared_data[i] == NULL);
+  }
   coll_local_inited = false;
   return collSuccess;
 #endif
