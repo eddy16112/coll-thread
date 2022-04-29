@@ -118,8 +118,8 @@ int main( int argc, char *argv[] )
  #if defined (LEGATE_USE_GASNET)
     args[i].comm = mpi_comm;
   #endif
-    args[i].sendbuf = send_buffs[i];
-    //args[i].sendbuf = recv_buffs[i];
+    //args[i].sendbuf = send_buffs[i];
+    args[i].sendbuf = recv_buffs[i];
     args[i].sendcount = SEND_COUNT;
     args[i].sendtype = COLL_DTYPE;
     args[i].recvbuf = recv_buffs[i];

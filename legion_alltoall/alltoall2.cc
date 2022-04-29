@@ -520,7 +520,8 @@ void finalize_comm_cpu_task(const Task *task,
   assert(global_comm->global_rank == point);
   assert(global_comm->status == true);
 
-#if 0
+#if 1
+#if defined (LEGATE_USE_GASNET)
   bool process_leader_flag = true;
   int *mapping_table = global_comm->mapping_table.mpi_rank;
   for (int i = 0; i < global_comm->global_comm_size; i++) {
@@ -530,6 +531,12 @@ void finalize_comm_cpu_task(const Task *task,
       break;
     }
   }
+#else
+  bool process_leader_flag = false;
+  if (global_comm->global_rank == 0) {
+    process_leader_flag = true;
+  }
+#endif
 #endif
   // if (process_leader_flag) {
   //   printf("Point %d, mpi rank %d, Finalize Done\n", point, global_comm->mpi_rank);
@@ -538,9 +545,12 @@ void finalize_comm_cpu_task(const Task *task,
   collCommDestroy(global_comm);
   free(global_comm);
   global_comm = NULL;
-  // if (process_leader_flag) {
-  //   collFinalize();
-  // }
+
+ #if 1
+  if (process_leader_flag) {
+    collFinalize();
+  }
+#endif
 }
 
 void check_task(const Task *task,
@@ -673,6 +683,6 @@ int main(int argc, char **argv)
   Runtime::add_registration_callback(mapper_registration);
 
   int val = Runtime::start(argc, argv);
-  collFinalize();
+  // collFinalize();
   return val;
 }
