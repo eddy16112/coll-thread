@@ -24,7 +24,7 @@
 #define ALLTOALL_USE_SENDRECV
 
 int collAlltoallMPIInplace(void *recvbuf, int recvcount, collDataType_t recvtype, 
-                    collComm_t global_comm)
+                           collComm_t global_comm)
 {	
   int res;
 
@@ -35,7 +35,7 @@ int collAlltoallMPIInplace(void *recvbuf, int recvcount, collDataType_t recvtype
   MPI_Aint lb, recvtype_extent;
   MPI_Type_get_extent(recvtype, &lb, &recvtype_extent);
   size_t max_size = recvtype_extent * recvcount;
-  printf("max size %ld\n", max_size);
+  size_t packed_size = 0;
 
   char *tmp_buffer = (char *)malloc(sizeof(char) * max_size);
  
@@ -52,6 +52,7 @@ int collAlltoallMPIInplace(void *recvbuf, int recvcount, collDataType_t recvtype
 
     char *send_tmp_buffer = (char *)recvbuf + right * recvcount * recvtype_extent;
     memcpy(tmp_buffer, send_tmp_buffer, recvcount * recvtype_extent);
+    packed_size = max_size;
     
     // receive data from the right
     recv_tag = collGenerateAlltoallTag(global_rank, right, global_comm);
@@ -74,8 +75,9 @@ int collAlltoallMPIInplace(void *recvbuf, int recvcount, collDataType_t recvtype
     }
 
     // send data to the right
+    assert(packed_size == recvtype_extent * recvcount);
     send_tag = collGenerateAlltoallTag(right, global_rank, global_comm);
-    res = MPI_Send(tmp_buffer, recvcount, recvtype, right_mpi_rank, send_tag, global_comm->comm);
+    res = MPI_Send(tmp_buffer, packed_size, MPI_PACKED, right_mpi_rank, send_tag, global_comm->comm);
     assert(res == MPI_SUCCESS);
 
     res = MPI_Wait(&request, MPI_STATUSES_IGNORE);
@@ -113,8 +115,6 @@ int collAlltoallMPI(const void *sendbuf, int sendcount, collDataType_t sendtype,
   if (sendbuf == recvbuf) {
     sendbuf_tmp = (void *)malloc(total_size * sendtype_extent * sendcount);
     memcpy(sendbuf_tmp, recvbuf, total_size * sendtype_extent * sendcount);
-    // int * sendval = (int*)sendbuf_tmp;
-    // printf("malloc %p, size %ld, [%d]\n", sendbuf_tmp, total_size * recvtype_extent * recvcount, sendval[0]);
   } else {
     sendbuf_tmp = const_cast<void*>(sendbuf);
   }
