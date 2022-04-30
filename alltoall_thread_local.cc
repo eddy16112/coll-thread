@@ -54,7 +54,7 @@ int collAlltoallLocal(const void* sendbuf,
     sendbuf_tmp = const_cast<void*>(sendbuf);
   }
 
-  global_comm->shared_data->buffers[global_rank] = const_cast<void*>(sendbuf_tmp);
+  global_comm->shared_data->buffers[global_rank] = sendbuf_tmp;
   __sync_synchronize();
 
   int recvfrom_global_rank;
