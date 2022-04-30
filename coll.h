@@ -64,7 +64,7 @@ typedef struct shared_data_s {
 } shared_data_t;
 
 extern volatile shared_data_t* shared_data[MAX_NB_COMMS];
-extern bool shared_data_ready_flag[MAX_NB_COMMS];
+extern volatile bool shared_data_ready_flag[MAX_NB_COMMS];
 
 typedef enum {
   collInt8   = 0,

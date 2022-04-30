@@ -38,7 +38,7 @@ MPI_Datatype collDouble = MPI_DOUBLE;
 #include <stdint.h>
 
 volatile shared_data_t* shared_data[MAX_NB_COMMS];
-bool shared_data_ready_flag[MAX_NB_COMMS];
+volatile bool shared_data_ready_flag[MAX_NB_COMMS];
 
 static bool coll_local_inited = false;
 
