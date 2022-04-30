@@ -95,7 +95,9 @@ int collCommCreate(collComm_t global_comm,
   global_comm->mpi_comm_size = 1;
   global_comm->mpi_rank      = 0;
   if (global_comm->global_rank == 0) {
-    pthread_barrier_init((pthread_barrier_t*)&(shared_data[global_comm->unique_id].barrier), NULL, global_comm->global_comm_size);
+    pthread_barrier_init((pthread_barrier_t*)&(shared_data[global_comm->unique_id].barrier),
+                         NULL,
+                         global_comm->global_comm_size);
     shared_data[global_comm->unique_id].ready_flag = true;
   }
   __sync_synchronize();
@@ -245,8 +247,8 @@ int collInit(int argc, char* argv[])
   for (int i = 0; i < MAX_NB_COMMS; i++) {
     shared_data[i].ready_flag = false;
     for (int j = 0; j < MAX_NB_THREADS; j++) {
-      shared_data[i].buffers[j]       = NULL;
-      shared_data[i].displs[j]        = NULL;
+      shared_data[i].buffers[j] = NULL;
+      shared_data[i].displs[j]  = NULL;
     }
   }
 
@@ -334,9 +336,9 @@ int collGenerateGatherTag(int rank, collComm_t global_comm)
 #else
 void collUpdateBuffer(collComm_t global_comm)
 {
-  int global_rank                           = global_comm->global_rank;
-  global_comm->shared_data->buffers[global_rank]       = NULL;
-  global_comm->shared_data->displs[global_rank]        = NULL;
+  int global_rank                                = global_comm->global_rank;
+  global_comm->shared_data->buffers[global_rank] = NULL;
+  global_comm->shared_data->displs[global_rank]  = NULL;
   // printf("rank %d, buffer idx %d\n", global_comm->global_rank, global_comm->current_buffer_idx);
 }
 
