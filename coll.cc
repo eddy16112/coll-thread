@@ -38,6 +38,7 @@ MPI_Datatype collDouble = MPI_DOUBLE;
 #include <stdint.h>
 
 volatile shared_data_t* shared_data[MAX_NB_COMMS];
+bool shared_data_ready_flag[MAX_NB_COMMS];
 
 static bool coll_local_inited = false;
 
@@ -102,14 +103,13 @@ int collCommCreate(collComm_t global_comm,
     }
     data->barrier = (pthread_barrier_t*)malloc(sizeof(pthread_barrier_t));
     pthread_barrier_init(data->barrier, NULL, global_comm->global_comm_size);
-    data->ready_flag                    = true;
     shared_data[global_comm->unique_id] = data;
+    shared_data_ready_flag[global_comm->unique_id] = true;
   }
   __sync_synchronize();
-  volatile shared_data_t* data = shared_data[global_comm->unique_id];
-  while (data == NULL) { data = shared_data[global_comm->unique_id]; }
+  while (shared_data_ready_flag[global_comm->unique_id] == false);
   global_comm->shared_data = shared_data[global_comm->unique_id];
-  assert(global_comm->shared_data->ready_flag == true);
+  // assert(global_comm->shared_data->ready_flag == true);
   printf("comm created rank %d\n", global_comm->global_rank);
 #endif
   if (global_comm->global_comm_size % global_comm->mpi_comm_size == 0) {
@@ -136,13 +136,12 @@ int collCommDestroy(collComm_t global_comm)
     shared_data_t* data = (shared_data_t*)shared_data[global_comm->unique_id];
     pthread_barrier_destroy(data->barrier);
     free(data->barrier);
-    data->ready_flag = false;
     free(data);
     shared_data[global_comm->unique_id] = NULL;
+    shared_data_ready_flag[global_comm->unique_id] = false;
   }
   __sync_synchronize();
-  volatile shared_data_t* data = shared_data[global_comm->unique_id];
-  while (data != NULL) { data = shared_data[global_comm->unique_id]; }
+  while (shared_data_ready_flag[global_comm->unique_id] != false);
   printf("comm destroy rank %d\n", global_comm->global_rank);
 #endif
   global_comm->status = false;
