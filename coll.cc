@@ -37,7 +37,7 @@ MPI_Datatype collDouble = MPI_DOUBLE;
 #else
 #include <stdint.h>
 
-shared_data_t shared_data[MAX_NB_COMMS];
+volatile shared_data_t shared_data[MAX_NB_COMMS];
 
 static bool coll_local_inited = false;
 
@@ -95,7 +95,7 @@ int collCommCreate(collComm_t global_comm,
   global_comm->mpi_comm_size = 1;
   global_comm->mpi_rank      = 0;
   if (global_comm->global_rank == 0) {
-    pthread_barrier_init(&(shared_data[global_comm->unique_id].barrier), NULL, global_comm->global_comm_size);
+    pthread_barrier_init((pthread_barrier_t*)&(shared_data[global_comm->unique_id].barrier), NULL, global_comm->global_comm_size);
     shared_data[global_comm->unique_id].ready_flag = true;
   }
   __sync_synchronize();
@@ -125,7 +125,7 @@ int collCommDestroy(collComm_t global_comm)
   }
 #else
   if (global_comm->global_rank == 0) {
-    pthread_barrier_destroy(&(shared_data[global_comm->unique_id].barrier));
+    pthread_barrier_destroy((pthread_barrier_t*)&(shared_data[global_comm->unique_id].barrier));
     shared_data[global_comm->unique_id].ready_flag = false;
   }
   __sync_synchronize();
