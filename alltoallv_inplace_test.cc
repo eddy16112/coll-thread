@@ -7,7 +7,7 @@
 #include "coll.h"
 
 #define NTHREADS 16
-#define SEND_COUNT 80
+#define SEND_COUNT 800
 #define COLL_DTYPE collInt
 typedef int DTYPE;
 
@@ -64,6 +64,7 @@ void *thread_func(void *thread_args)
   collAlltoallv(args->sendbuf, sendcount, sdispls, args->sendtype, 
                args->recvbuf, recvcount, rdispls, args->recvtype,
                &global_comm);
+  collCommDestroy(&global_comm);
   return NULL;
 }
  
