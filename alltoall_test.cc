@@ -50,6 +50,7 @@ void *thread_func(void *thread_args)
   collAlltoall(args->sendbuf, args->sendcount, args->sendtype, 
                args->recvbuf, args->recvcount, args->recvtype,
                &global_comm);
+  collCommDestroy(&global_comm);
   return NULL;
 }
  
