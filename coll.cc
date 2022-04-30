@@ -37,7 +37,7 @@ MPI_Datatype collDouble = MPI_DOUBLE;
 #else
 #include <stdint.h>
 
-volatile shared_data_t* shared_data[MAX_NB_COMMS];
+shared_data_t shared_data[MAX_NB_COMMS];
 
 static bool coll_local_inited = false;
 
@@ -95,22 +95,14 @@ int collCommCreate(collComm_t global_comm,
   global_comm->mpi_comm_size = 1;
   global_comm->mpi_rank      = 0;
   if (global_comm->global_rank == 0) {
-    shared_data_t* data = (shared_data_t*)malloc(sizeof(shared_data_t));
-    for (int j = 0; j < MAX_NB_THREADS; j++) {
-      data->buffers[j] = NULL;
-      data->displs[j]  = NULL;
-    }
-    data->barrier = (pthread_barrier_t*)malloc(sizeof(pthread_barrier_t));
-    pthread_barrier_init(data->barrier, NULL, global_comm->global_comm_size);
-    data->ready_flag                    = true;
-    shared_data[global_comm->unique_id] = data;
+    pthread_barrier_init(&(shared_data[global_comm->unique_id].barrier), NULL, global_comm->global_comm_size);
+    shared_data[global_comm->unique_id].ready_flag = true;
   }
   __sync_synchronize();
-  volatile shared_data_t* data = shared_data[global_comm->unique_id];
-  while (data == NULL) { data = shared_data[global_comm->unique_id]; }
-  global_comm->shared_data = shared_data[global_comm->unique_id];
+  volatile shared_data_t* data = &(shared_data[global_comm->unique_id]);
+  while (data->ready_flag != true) { data = &(shared_data[global_comm->unique_id]); }
+  global_comm->shared_data = &(shared_data[global_comm->unique_id]);
   assert(global_comm->shared_data->ready_flag == true);
-  printf("comm created rank %d\n", global_comm->global_rank);
 #endif
   if (global_comm->global_comm_size % global_comm->mpi_comm_size == 0) {
     global_comm->nb_threads = global_comm->global_comm_size / global_comm->mpi_comm_size;
@@ -133,17 +125,12 @@ int collCommDestroy(collComm_t global_comm)
   }
 #else
   if (global_comm->global_rank == 0) {
-    shared_data_t* data = (shared_data_t*)shared_data[global_comm->unique_id];
-    pthread_barrier_destroy(data->barrier);
-    free(data->barrier);
-    data->ready_flag = false;
-    free(data);
-    shared_data[global_comm->unique_id] = NULL;
+    pthread_barrier_destroy(&(shared_data[global_comm->unique_id].barrier));
+    shared_data[global_comm->unique_id].ready_flag = false;
   }
   __sync_synchronize();
-  volatile shared_data_t* data = shared_data[global_comm->unique_id];
-  while (data != NULL) { data = shared_data[global_comm->unique_id]; }
-  printf("comm destroy rank %d\n", global_comm->global_rank);
+  volatile shared_data_t* data = &(shared_data[global_comm->unique_id]);
+  while (data->ready_flag != false) { data = &(shared_data[global_comm->unique_id]); }
 #endif
   global_comm->status = false;
   return collSuccess;
@@ -255,7 +242,13 @@ int collInit(int argc, char* argv[])
   int provided;
   return MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
 #else
-  for (int i = 0; i < MAX_NB_COMMS; i++) { shared_data[i] = NULL; }
+  for (int i = 0; i < MAX_NB_COMMS; i++) {
+    shared_data[i].ready_flag = false;
+    for (int j = 0; j < MAX_NB_THREADS; j++) {
+      shared_data[i].buffers[j]       = NULL;
+      shared_data[i].displs[j]        = NULL;
+    }
+  }
 
   coll_local_inited = true;
   return collSuccess;
@@ -268,7 +261,7 @@ int collFinalize(void)
   return MPI_Finalize();
 #else
   assert(coll_local_inited == true);
-  for (int i = 0; i < MAX_NB_COMMS; i++) { assert(shared_data[i] == NULL); }
+  for (int i = 0; i < MAX_NB_COMMS; i++) { assert(shared_data[i].ready_flag == false); }
   coll_local_inited = false;
   return collSuccess;
 #endif
@@ -350,6 +343,6 @@ void collUpdateBuffer(collComm_t global_comm)
 void collBarrierLocal(collComm_t global_comm)
 {
   assert(coll_local_inited == true);
-  pthread_barrier_wait(global_comm->shared_data->barrier);
+  pthread_barrier_wait((pthread_barrier_t*)&(global_comm->shared_data->barrier));
 }
 #endif

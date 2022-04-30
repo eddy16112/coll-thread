@@ -82,7 +82,6 @@ int collAllgatherLocal(const void* sendbuf,
   __sync_synchronize();
 
   collUpdateBuffer(global_comm);
-  printf("allgather done\n");
 
   return collSuccess;
 }

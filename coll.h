@@ -58,13 +58,13 @@ typedef struct mapping_table_s {
 #define MAX_NB_COMMS 64
 
 typedef struct shared_data_s {
-  volatile void* buffers[MAX_NB_THREADS];
-  volatile int* displs[MAX_NB_THREADS];
-  pthread_barrier_t* barrier;
+  void* buffers[MAX_NB_THREADS];
+  int* displs[MAX_NB_THREADS];
+  pthread_barrier_t barrier;
   bool ready_flag;
 } shared_data_t;
 
-extern volatile shared_data_t* shared_data[MAX_NB_COMMS];
+extern shared_data_t shared_data[MAX_NB_COMMS];
 
 typedef enum {
   collInt8   = 0,
