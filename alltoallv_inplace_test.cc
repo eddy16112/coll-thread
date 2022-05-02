@@ -7,7 +7,7 @@
 #include "coll.h"
 
 #define NTHREADS 16
-#define SEND_COUNT 800
+#define SEND_COUNT 80
 #define COLL_DTYPE collInt
 typedef int DTYPE;
 
@@ -109,7 +109,7 @@ int main( int argc, char *argv[] )
     {
       a[j] = (DTYPE)(global_rank * N + j);
       b[j] = (DTYPE)(global_rank * N + j);
-      // printf(" %d", a[j]);		
+     // printf(" %d", a[j]);		
     }
 #endif		
     printf("\n");

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include "coll.h"
 
@@ -49,6 +50,7 @@ void *thread_func(void *thread_args)
 #endif
 
   if (global_comm.unique_id %2 == 0) {
+   // sleep(5);
     DTYPE *sendbuf, *recvbuf;
     DTYPE **sendbufs, **recvbufs;
     int *sendcount, *recvcount;
@@ -278,6 +280,7 @@ int main( int argc, char *argv[] )
  #if defined (LEGATE_USE_GASNET)
   MPI_Barrier(mpi_comm);
 #endif
+
 
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];

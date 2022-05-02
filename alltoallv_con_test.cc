@@ -3,11 +3,12 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include "coll.h"
 
 #define NTHREADS 4
-#define NB_GROUPS 4
+#define NB_GROUPS 8
 #define SEND_COUNT 800
 #define COLL_DTYPE collInt
 typedef int DTYPE;
@@ -44,6 +45,7 @@ void *thread_func(void *thread_args)
 #endif
 
   if (global_comm.unique_id %2 == 0) {
+    //sleep(5);
     DTYPE *sendbuf, *recvbuf;
     DTYPE **sendbufs, **recvbufs;
     int *sendcount, *recvcount;
@@ -280,7 +282,7 @@ int main( int argc, char *argv[] )
   int group_id[NB_GROUPS];
   for (int i = 0; i < NB_GROUPS; i++) {
     collGetUniqueId(&(group_id[i]));
-    assert(group_id[i] == i);
+    //assert(group_id[i] == i);
   }
 
   for (int i = 0; i < NTHREADS*NB_GROUPS; i++) {
