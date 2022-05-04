@@ -320,7 +320,7 @@ int collGenerateAlltoallTag(int rank1, int rank2, collComm_t global_comm)
   int tag = (rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG;
 #else
 #if 1
-  int tag = ((rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG) * MAX_NB_COMMS +
+  int tag       = ((rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG) * MAX_NB_COMMS +
             global_comm->unique_id;
 #else
   int tag = ((rank1 % global_comm->nb_threads * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG) *
@@ -361,7 +361,7 @@ int collGenerateBcastTag(int rank, collComm_t global_comm)
   int tag = rank * MAX_COLL_TYPES + BCAST_TAG;
 #else
   int tag = (rank * MAX_COLL_TYPES + BCAST_TAG) * MAX_NB_COMMS + global_comm->unique_id;
-#endif  
+#endif
   assert(tag < INT_MAX && tag >= 0);
   return tag;
 }
@@ -372,7 +372,7 @@ int collGenerateGatherTag(int rank, collComm_t global_comm)
   int tag = rank * MAX_COLL_TYPES + GATHER_TAG;
 #else
   int tag = (rank * MAX_COLL_TYPES + GATHER_TAG) * MAX_NB_COMMS + global_comm->unique_id;
-#endif  
+#endif
   assert(tag < INT_MAX && tag > 0);
   return tag;
 }
