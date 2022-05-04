@@ -1,4 +1,4 @@
-DEBUG		?= 0
+DEBUG		?= 1
 COLL_NETWORKS	?= mpi
 
 ifeq ($(strip $(COLL_NETWORKS)),mpi)

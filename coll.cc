@@ -34,6 +34,8 @@ MPI_Datatype collInt64  = MPI_INT64_T;
 MPI_Datatype collUint64 = MPI_UINT64_T;
 MPI_Datatype collFloat  = MPI_FLOAT;
 MPI_Datatype collDouble = MPI_DOUBLE;
+
+MPI_Comm communicators[MAX_NB_COMMS];
 #else
 #include <stdint.h>
 
@@ -80,11 +82,11 @@ int collCommCreate(collComm_t global_comm,
   global_comm->unique_id        = unique_id;
 #if defined(LEGATE_USE_GASNET)
   int mpi_rank, mpi_comm_size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &mpi_comm_size);
+  MPI_Comm_rank(communicators[unique_id], &mpi_rank);
+  MPI_Comm_size(communicators[unique_id], &mpi_comm_size);
   global_comm->mpi_comm_size = mpi_comm_size;
   global_comm->mpi_rank      = mpi_rank;
-  global_comm->comm          = MPI_COMM_WORLD;
+  global_comm->comm          = communicators[unique_id];
   if (mapping_table != NULL) {
     global_comm->mapping_table.global_rank = (int*)malloc(sizeof(int) * global_comm_size);
     global_comm->mapping_table.mpi_rank    = (int*)malloc(sizeof(int) * global_comm_size);
@@ -242,7 +244,12 @@ int collInit(int argc, char* argv[])
   current_unique_id = 0;
 #if defined(LEGATE_USE_GASNET)
   int provided;
-  return MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+  int res;
+  res = MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+  for (int i = 0; i < MAX_NB_COMMS; i++) {
+    MPI_Comm_dup(MPI_COMM_WORLD, &(communicators[i]));
+  }
+  return res;
 #else
   for (int i = 0; i < MAX_NB_COMMS; i++) {
     shared_data[i].ready_flag = false;
@@ -273,11 +280,12 @@ int collGetUniqueId(int* id)
 {
   *id = current_unique_id;
   current_unique_id++;
-#if defined(LEGATE_USE_GASNET)
-  current_unique_id = current_unique_id % 10;
-#else
   assert(current_unique_id <= MAX_NB_COMMS);
-#endif
+// #if defined(LEGATE_USE_GASNET)
+//   current_unique_id = current_unique_id % 10;
+// #else
+//   assert(current_unique_id <= MAX_NB_COMMS);
+// #endif
   return collSuccess;
 }
 
@@ -290,11 +298,9 @@ int collGenerateAlltoallTag(int rank1, int rank2, collComm_t global_comm)
   // * 10000 + recvfrom_global_rank) * 10 + ALLTOALL_TAG) * 10 + global_comm->unique_id; // idx of
   // current seg we are receving (in src/my rank)
 #if 1
-  int tag = ((rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG) * 10 + global_comm->unique_id;
+  int tag = (rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG;
 #else
-  int tag =
-    ((rank1 % global_comm->nb_threads * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG) * 10 +
-    global_comm->unique_id;
+  int tag = (rank1 % global_comm->nb_threads * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG;
 #endif
   assert(tag < INT_MAX && tag > 0);
   return tag;
@@ -308,12 +314,9 @@ int collGenerateAlltoallvTag(int rank1, int rank2, collComm_t global_comm)
   // * 10000 + recvfrom_global_rank) * 10 + ALLTOALLV_TAG) * 10 + global_comm->unique_id; // idx of
   // current seg we are receving (in src/my rank)
 #if 1
-  int tag =
-    ((rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALLV_TAG) * 10 + global_comm->unique_id;
+  int tag = (rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALLV_TAG;
 #else
-  int tag =
-    ((rank1 % global_comm->nb_threads * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALLV_TAG) * 10 +
-    global_comm->unique_id;
+  int tag = (rank1 % global_comm->nb_threads * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALLV_TAG;
 #endif
   assert(tag < INT_MAX && tag > 0);
   return tag;
@@ -321,14 +324,14 @@ int collGenerateAlltoallvTag(int rank1, int rank2, collComm_t global_comm)
 
 int collGenerateBcastTag(int rank, collComm_t global_comm)
 {
-  int tag = (rank * MAX_COLL_TYPES + BCAST_TAG) * 10 + global_comm->unique_id;
+  int tag = rank * MAX_COLL_TYPES + BCAST_TAG;
   assert(tag < INT_MAX && tag >= 0);
   return tag;
 }
 
 int collGenerateGatherTag(int rank, collComm_t global_comm)
 {
-  int tag = (rank * MAX_COLL_TYPES + GATHER_TAG) * 10 + global_comm->unique_id;
+  int tag = rank * MAX_COLL_TYPES + GATHER_TAG;
   assert(tag < INT_MAX && tag > 0);
   return tag;
 }
