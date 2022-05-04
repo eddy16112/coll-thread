@@ -296,11 +296,12 @@ int collGenerateAlltoallTag(int rank1, int rank2, collComm_t global_comm)
   // * 10000 + recvfrom_global_rank) * 10 + ALLTOALL_TAG) * 10 + global_comm->unique_id; // idx of
   // current seg we are receving (in src/my rank)
 #if 1
-  int tag = ((rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG) * MAX_NB_COMMS + global_comm->unique_id;
+  int tag = ((rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG) * MAX_NB_COMMS +
+            global_comm->unique_id;
 #else
-  int tag =
-    ((rank1 % global_comm->nb_threads * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG) * MAX_NB_COMMS +
-    global_comm->unique_id;
+  int tag = ((rank1 % global_comm->nb_threads * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALL_TAG) *
+              MAX_NB_COMMS +
+            global_comm->unique_id;
 #endif
   assert(tag < INT_MAX && tag > 0);
   return tag;
@@ -314,12 +315,12 @@ int collGenerateAlltoallvTag(int rank1, int rank2, collComm_t global_comm)
   // * 10000 + recvfrom_global_rank) * 10 + ALLTOALLV_TAG) * 10 + global_comm->unique_id; // idx of
   // current seg we are receving (in src/my rank)
 #if 1
-  int tag =
-    ((rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALLV_TAG) * MAX_NB_COMMS + global_comm->unique_id;
+  int tag = ((rank1 * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALLV_TAG) * MAX_NB_COMMS +
+            global_comm->unique_id;
 #else
-  int tag =
-    ((rank1 % global_comm->nb_threads * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALLV_TAG) * MAX_NB_COMMS +
-    global_comm->unique_id;
+  int tag = ((rank1 % global_comm->nb_threads * 10000 + rank2) * MAX_COLL_TYPES + ALLTOALLV_TAG) *
+              MAX_NB_COMMS +
+            global_comm->unique_id;
 #endif
   assert(tag < INT_MAX && tag > 0);
   return tag;
