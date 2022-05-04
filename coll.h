@@ -24,7 +24,7 @@
 #define collSuccess 0
 #define collError 1
 
-#define MAX_NB_COMMS 64
+#define MAX_NB_COMMS 10
 
 #if defined(LEGATE_USE_GASNET)
 #include <mpi.h>
