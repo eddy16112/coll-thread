@@ -44,15 +44,18 @@ void top_level_task(const Task *task,
                     Context ctx, Runtime *runtime)
 {
   printf("in top level task\n");
-  int num_subregions = 2;
+  int num_subregions_x = 2;
+  int num_subregions_y = 2;
   int count_per_subregion = 8;
   int num_iterations = 5;
   {
     const InputArgs &command_args = Runtime::get_input_args();
     for (int i = 1; i < command_args.argc; i++)
     {
-      if (!strcmp(command_args.argv[i],"-b"))
-        num_subregions = atoi(command_args.argv[++i]);
+      if (!strcmp(command_args.argv[i],"-x"))
+        num_subregions_x = atoi(command_args.argv[++i]);
+      if (!strcmp(command_args.argv[i],"-y"))
+        num_subregions_y = atoi(command_args.argv[++i]);
       if (!strcmp(command_args.argv[i],"-n"))
         count_per_subregion = atoi(command_args.argv[++i]);
       if (!strcmp(command_args.argv[i],"-i"))
@@ -60,10 +63,12 @@ void top_level_task(const Task *task,
     }
   }
 
-  int num_elements = count_per_subregion * num_subregions; 
+  int num_elements_x = count_per_subregion * num_subregions_x;
+  int num_elements_y = count_per_subregion * num_subregions_y; 
 
-  // Create our logical regions using the same schemas as earlier examples
-  Rect<1> elem_rect(0,num_elements-1);
+  Point<2> lo(0, 0);
+  Point<2> hi(num_elements_x-1, num_elements_y-1);
+  const Rect<2> elem_rect(lo, hi);
   IndexSpace is = runtime->create_index_space(ctx, elem_rect); 
   runtime->attach_name(is, "is");
   FieldSpace input_fs = runtime->create_field_space(ctx);
@@ -75,11 +80,15 @@ void top_level_task(const Task *task,
     runtime->attach_name(input_fs, FID_X, "X");
   }
 
-  Rect<1> color_bounds(0,num_subregions-1);
+  Point<2> color_lo(0, 0);
+  Point<2> color_hi(num_subregions_x-1, num_subregions_y-1);
+  const Rect<2> color_bounds(color_lo, color_hi);
   IndexSpace color_is = runtime->create_index_space(ctx, color_bounds);
 
   IndexPartition ip = runtime->create_equal_partition(ctx, is, color_is);
   runtime->attach_name(ip, "ip");
+
+  printf("done partition\n");
 
   LogicalRegion input_lr[2];
   LogicalPartition input_lp[2];
@@ -175,12 +184,12 @@ void init_field_task(const Task *task,
   const int point = task->index_point.point_data[0];
   const int print_flag = *((const int*)task->args);
 
-  const FieldAccessor<READ_WRITE,float,1,coord_t,
-        Realm::AffineAccessor<float,1,coord_t> > acc(regions[0], fid);
+  const FieldAccessor<READ_WRITE,float,2,coord_t,
+        Realm::AffineAccessor<float,2,coord_t> > acc(regions[0], fid);
 
-  Rect<1> rect = runtime->get_index_space_domain(ctx,
+  Rect<2> rect = runtime->get_index_space_domain(ctx,
                   task->regions[0].region.get_index_space());
-  float* ptr = acc.ptr(rect.lo);
+  // float* ptr = acc.ptr(rect.lo);
   if (print_flag) {
     printf("Initializing field %d for block %d, size %ld, pid " IDFMT "\n", fid, point, rect.volume(), task->current_proc.id);
   }
@@ -208,14 +217,14 @@ void allgather_task(const Task *task,
   const int point = task->index_point.point_data[0];
   const int print_flag = *((const int*)task->args);
 
-  const FieldAccessor<READ_ONLY,float,1,coord_t,
-        Realm::AffineAccessor<float,1,coord_t> > acc_in(regions[0], fid);
-  const FieldAccessor<READ_WRITE,float,1,coord_t,
-        Realm::AffineAccessor<float,1,coord_t> > acc_out(regions[1], fid);
+  const FieldAccessor<READ_ONLY,float,2,coord_t,
+        Realm::AffineAccessor<float,2,coord_t> > acc_in(regions[0], fid);
+  const FieldAccessor<READ_WRITE,float,2,coord_t,
+        Realm::AffineAccessor<float,2,coord_t> > acc_out(regions[1], fid);
 
-  Rect<1> rect_in = runtime->get_index_space_domain(ctx,
+  Rect<2> rect_in = runtime->get_index_space_domain(ctx,
                   task->regions[0].region.get_index_space());
-  Rect<1> rect_out = runtime->get_index_space_domain(ctx,
+  Rect<2> rect_out = runtime->get_index_space_domain(ctx,
                   task->regions[1].region.get_index_space());
   if (print_flag) {
     printf("allgather field %d for block %d, pid " IDFMT "\n", fid, point, task->current_proc.id);
@@ -248,19 +257,19 @@ void check_task(const Task *task,
   assert(task->regions.size() == 1);
   const int point = task->index_point.point_data[0];
 
-  const FieldAccessor<READ_ONLY,float,1,coord_t,
-        Realm::AffineAccessor<float,1,coord_t> > acc(regions[0], FID_X);
+  const FieldAccessor<READ_ONLY,float,2,coord_t,
+        Realm::AffineAccessor<float,2,coord_t> > acc(regions[0], FID_X);
 
-  Rect<1> rect = runtime->get_index_space_domain(ctx,
+  Rect<2> rect = runtime->get_index_space_domain(ctx,
                   task->regions[0].region.get_index_space());
 
-  const float *ptr = acc.ptr(rect.lo);
+  // const float *ptr = acc.ptr(rect.lo);
 
-  printf("point %d ", point);
-  for (size_t i = 0; i < rect.volume(); i++) {
-    printf("%.0f, ", ptr[i]);
-  }
-  printf("\n");
+  // printf("point %d ", point);
+  // for (size_t i = 0; i < rect.volume(); i++) {
+  //   printf("%.0f, ", ptr[i]);
+  // }
+  // printf("\n");
 
   printf("Point %d SUCCESS!\n", point);
 }
