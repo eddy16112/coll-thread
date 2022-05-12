@@ -236,41 +236,43 @@ int main( int argc, char *argv[] )
   MPI_Barrier(mpi_comm);
 #endif
 
-  pthread_t thread_id[NTHREADS*2];
-  thread_args_t args[NTHREADS*2];
+  pthread_t thread_id1[NTHREADS];
+  thread_args_t args1[NTHREADS];
 
   for (int i = 0; i < NTHREADS; i++) {
-    args[i].mpi_rank = mpi_rank;
-    args[i].mpi_comm_size = mpi_comm_size;
-    args[i].tid = i;
-    args[i].nb_threads = NTHREADS;
-    args[i].uid = 0;
+    args1[i].mpi_rank = mpi_rank;
+    args1[i].mpi_comm_size = mpi_comm_size;
+    args1[i].tid = i;
+    args1[i].nb_threads = NTHREADS;
+    args1[i].uid = 0;
  #if defined (LEGATE_USE_GASNET)
-    args[i].comm = mpi_comm;
+    args1[i].comm = mpi_comm;
   #endif
-    pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
+    pthread_create(&thread_id1[i], NULL, thread_func, (void *)&(args1[i]));
     //thread_func((void *)&(args[i]));
   }
 
   for(int i = 0; i < NTHREADS; i++) {
-      pthread_join( thread_id[i], NULL); 
+      pthread_join( thread_id1[i], NULL); 
   }
 
-    for (int i = 0; i < NTHREADS*2; i++) {
-    args[i].mpi_rank = mpi_rank;
-    args[i].mpi_comm_size = mpi_comm_size;
-    args[i].tid = i;
-    args[i].nb_threads = NTHREADS*2;
-    args[i].uid = 1;
+  pthread_t thread_id2[NTHREADS*2];
+  thread_args_t args2[NTHREADS*2];
+  for (int i = 0; i < NTHREADS*2; i++) {
+    args2[i].mpi_rank = mpi_rank;
+    args2[i].mpi_comm_size = mpi_comm_size;
+    args2[i].tid = i;
+    args2[i].nb_threads = NTHREADS*2;
+    args2[i].uid = 1;
  #if defined (LEGATE_USE_GASNET)
-    args[i].comm = mpi_comm;
+    args2[i].comm = mpi_comm;
   #endif
-    pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
+    pthread_create(&thread_id2[i], NULL, thread_func, (void *)&(args2[i]));
     //thread_func((void *)&(args[i]));
   }
 
   for(int i = 0; i < NTHREADS*2; i++) {
-      pthread_join( thread_id[i], NULL); 
+      pthread_join( thread_id2[i], NULL); 
   }
 
   collFinalize();
