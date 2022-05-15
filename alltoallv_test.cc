@@ -103,7 +103,7 @@ void *thread_func(void *thread_args)
                 rdispls, COLL_DTYPE, 
                 &global_comm);
   
-  if (global_rank == 2) {
+  if (global_rank == 0) {
     for (int i = 0; i < seg_size * global_comm_size; i++) {
       printf("%d ", recvbuf[i]);
     }

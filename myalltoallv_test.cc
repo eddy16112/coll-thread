@@ -220,7 +220,7 @@ void *thread_func(void *thread_args)
     for (int i=0; i<global_comm_size; i++) {
         p = rbuf + rdispls[i];
         for (int j=0; j<global_rank; j++) {
-            // printf("%d ", p[j]);
+            // if (global_rank == 2) printf("%d ", p[j]);
             if (p[j] != i * 100 + (global_rank*(global_rank+1))/2 + j) {
                 fprintf( stderr, "[%d] got %d expected %d for %dth\n",
                                     global_rank, p[j],(i*(i+1))/2 + j, j );
