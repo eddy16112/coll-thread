@@ -91,7 +91,7 @@ int collCommCreate(collComm_t global_comm,
 #if defined(USE_NEW_COMM)
   int compare_result;
   MPI_Comm comm = communicators[unique_id];
-  res = MPI_Comm_compare(comm, MPI_COMM_WORLD, &compare_result);
+  res           = MPI_Comm_compare(comm, MPI_COMM_WORLD, &compare_result);
   assert(res == MPI_SUCCESS);
   assert(compare_result = MPI_CONGRUENT);
   // MPI_Comm comm;
