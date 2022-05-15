@@ -428,23 +428,23 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
   int global_rank = point;
   int global_comm_size = task->index_domain.get_volume();
   assert(task->futures.size() == (static_cast<size_t>(global_comm_size) + 1));
-  const int* unique_id = (const int*)task->futures[0].get_buffer(Memory::SYSTEM_MEM);
-  assert(*unique_id == 1);
+  const int unique_id = task->futures[0].get_result<int>();;
+  assert(unique_id == 1);
  #if defined (LEGATE_USE_GASNET)
   int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
   for (int i = 0; i < global_comm_size; i++) {
-    const int* mapping_table_element = (const int*)task->futures[i+1].get_buffer(Memory::SYSTEM_MEM);
-    mapping_table[i] = *mapping_table_element;
+    const int mapping_table_element = task->futures[i+1].get_result<int>();
+    mapping_table[i] = mapping_table_element;
     // if (global_rank == 0)
     //   printf("%d ", mapping_table[i]);
   }
   // if (global_rank == 0) printf("\n");
-  collCommCreate(global_comm, global_comm_size, global_rank, *unique_id, mapping_table);
+  collCommCreate(global_comm, global_comm_size, global_rank, unique_id, mapping_table);
   assert(mapping_table[point] == global_comm->mpi_rank);
   // assert(global_comm_size == rect_mapping.volume());
   free(mapping_table);
 #else
-  collCommCreate(global_comm, global_comm_size, global_rank, *unique_id, NULL);
+  collCommCreate(global_comm, global_comm_size, global_rank, unique_id, NULL);
 #endif
 
   return global_comm;
