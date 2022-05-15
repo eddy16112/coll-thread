@@ -312,7 +312,7 @@ void top_level_task(const Task *task,
   //   init_launcher.region_requirements[0].add_field(FID_Z);
   //   runtime->execute_index_space(ctx, init_launcher);
   // }
-  for (int i = 0; i  < 20; i ++) {
+  for (int i = 0; i  < 5; i ++) {
   {
     IndexLauncher alltoall_launcher(ALLTOALL_TASK_ID, color_is,
                                     TaskArgument(&task_arg, sizeof(task_args_t)), arg_map);
@@ -435,9 +435,10 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
   for (int i = 0; i < global_comm_size; i++) {
     const int* mapping_table_element = (const int*)task->futures[i+1].get_buffer(Memory::SYSTEM_MEM);
     mapping_table[i] = *mapping_table_element;
-    //printf("%d ", mapping_table[i]);
+    // if (global_rank == 0)
+    //   printf("%d ", mapping_table[i]);
   }
-  //printf("\n");
+  // if (global_rank == 0) printf("\n");
   collCommCreate(global_comm, global_comm_size, global_rank, *unique_id, mapping_table);
   assert(mapping_table[point] == global_comm->mpi_rank);
   // assert(global_comm_size == rect_mapping.volume());
