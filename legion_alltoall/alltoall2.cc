@@ -546,7 +546,7 @@ void finalize_comm_cpu_task(const Task *task,
   free(global_comm);
   global_comm = NULL;
 
- #if 1
+ #if 0
   if (process_leader_flag) {
     collFinalize();
   }
@@ -683,6 +683,6 @@ int main(int argc, char **argv)
   Runtime::add_registration_callback(mapper_registration);
 
   int val = Runtime::start(argc, argv);
-  // collFinalize();
+  collFinalize();
   return val;
 }
