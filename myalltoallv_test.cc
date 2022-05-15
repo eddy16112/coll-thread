@@ -238,6 +238,8 @@ void *thread_func(void *thread_args)
     free( sbuf );
 #endif
 
+  collCommDestroy(&global_comm);
+
   return NULL;
 }
  

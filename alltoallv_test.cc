@@ -8,8 +8,8 @@
 
 #define NTHREADS 16
 #define SEND_COUNT 80
-#define COLL_DTYPE collInt
-typedef int DTYPE;
+#define COLL_DTYPE collInt64
+typedef long DTYPE;
 
 #define VERIFICATION_2
 
