@@ -10,7 +10,7 @@
 #define NTHREADS 4
 #define NB_GROUPS 4
 #define SEND_COUNT 800
-#define COLL_DTYPE collInt
+#define COLL_DTYPE CollInt
 typedef int DTYPE;
 
 #define VERIFICATION_2
@@ -75,8 +75,8 @@ void *thread_func(void *thread_args)
       sdispls[i] = i * seg_size;
     }
 
-    collAllgather(&seg_size, 1, collInt, 
-                  recvcount, 1, collInt, 
+    collAllgather(&seg_size, 1, CollInt, 
+                  recvcount, 1, CollInt, 
                   &global_comm);
     
     for (int i = 0; i < global_comm_size; i++) {

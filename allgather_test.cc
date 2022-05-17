@@ -9,7 +9,7 @@
 
 #define NTHREADS 4
 #define SEND_COUNT 8
-#define COLL_DTYPE collInt
+#define COLL_DTYPE CollInt
 typedef int DTYPE;
 
 #define VERIFICATION_2
@@ -26,10 +26,10 @@ typedef struct thread_args_s {
 #endif
   void *sendbuf;
   int sendcount; 
-  collDataType_t sendtype;
+  CollDataType sendtype;
   void *recvbuf;
   int recvcount;
-  collDataType_t recvtype;
+  CollDataType recvtype;
 } thread_args_t;
 
 void *thread_func(void *thread_args)

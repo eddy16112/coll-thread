@@ -8,7 +8,7 @@
 
 #define NTHREADS 16
 #define SEND_COUNT 80
-#define COLL_DTYPE collInt64
+#define COLL_DTYPE CollInt64
 typedef long DTYPE;
 
 #define VERIFICATION_2
@@ -112,8 +112,8 @@ void *thread_func(void *thread_args)
 #else
 
   int seg_size = global_rank + 1;
-  collAllgather(&seg_size, 1, collInt, 
-              recvcount, 1, collInt, 
+  collAllgather(&seg_size, 1, CollInt, 
+              recvcount, 1, CollInt, 
               &global_comm);
   
   for (int i = 0; i < global_comm_size; i++) {

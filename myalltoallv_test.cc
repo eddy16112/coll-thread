@@ -8,7 +8,7 @@
 
 #define NTHREADS 16
 #define SEND_COUNT 80
-#define COLL_DTYPE collInt
+#define COLL_DTYPE CollInt
 typedef int DTYPE;
 
 #define VERIFICATION_2
@@ -214,8 +214,8 @@ void *thread_func(void *thread_args)
         rdispls[i] = i * global_rank;
         sdispls[i] = (i * (i+1))/2;
     }
-    collAlltoallv( sbuf, sendcounts, sdispls, collInt,
-                       rbuf, recvcounts, rdispls, collInt, &global_comm );
+    collAlltoallv( sbuf, sendcounts, sdispls, CollInt,
+                       rbuf, recvcounts, rdispls, CollInt, &global_comm );
     /* Check rbuf */
     for (int i=0; i<global_comm_size; i++) {
         p = rbuf + rdispls[i];

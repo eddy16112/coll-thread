@@ -9,7 +9,7 @@
 #define TOTAL_RANKS 4
 #define NTHREADS 2
 #define SEND_COUNT 8
-#define COLL_DTYPE collInt
+#define COLL_DTYPE CollInt
 typedef int DTYPE;
 
 #define VERIFICATION_1
@@ -26,10 +26,10 @@ typedef struct thread_args_s {
 #endif
   void *sendbuf;
   int sendcount; 
-  collDataType_t sendtype;
+  CollDataType sendtype;
   void *recvbuf;
   int recvcount;
-  collDataType_t recvtype;
+  CollDataType recvtype;
   int nb_coll_ranks;
   int global_comm_size;
 } thread_args_t;
