@@ -104,10 +104,6 @@ typedef struct Coll_Comm_s {
 
 typedef Coll_Comm* collComm_t;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 int collCommCreate(collComm_t global_comm,
                    int global_comm_size,
                    int global_rank,
@@ -237,10 +233,6 @@ int collAllgatherLocal(const void* sendbuf,
 void collUpdateBuffer(collComm_t global_comm);
 
 void collBarrierLocal(collComm_t global_comm);
-#endif
-
-#ifdef __cplusplus
-}
 #endif
 
 }  // namespace coll
