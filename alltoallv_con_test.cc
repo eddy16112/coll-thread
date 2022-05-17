@@ -15,6 +15,8 @@ typedef int DTYPE;
 
 #define VERIFICATION_2
 
+using namespace legate::comm::coll;
+
 typedef struct thread_args_s {
   int mpi_comm_size;
   int nb_threads;

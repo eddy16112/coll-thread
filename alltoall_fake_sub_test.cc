@@ -14,6 +14,8 @@ typedef int DTYPE;
 
 #define VERIFICATION_1
 
+using namespace legate::comm::coll;
+
 pthread_barrier_t barrier;
 
 typedef struct thread_args_s {
