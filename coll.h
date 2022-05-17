@@ -18,8 +18,8 @@
 
 //#define DEBUG_PRINT
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 #if defined(LEGATE_USE_GASNET)
 #include <mpi.h>
