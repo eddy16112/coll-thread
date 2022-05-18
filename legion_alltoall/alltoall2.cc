@@ -48,7 +48,7 @@ typedef struct task_args_s{
   int sendcount;
 } task_args_t;
 
-#define COLL_DTYPE coll::CollInt
+#define COLL_DTYPE coll::CollDataType::CollInt
 typedef int DTYPE;
 
 class MyMapper : public DefaultMapper {
