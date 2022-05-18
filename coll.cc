@@ -50,7 +50,7 @@ MPI_Comm communicators[MAX_NB_COMMS];
 
 volatile ThreadSharedData shared_data[MAX_NB_COMMS];
 
-size_t get_dtype_size(CollDataType dtype)
+size_t collLocalDtypeSize(CollDataType dtype)
 {
   if (dtype == CollInt8 || dtype == CollChar) {
     return sizeof(char);
@@ -343,12 +343,13 @@ int collGenerateAlltoallTag(int rank1, int rank2, CollComm global_comm)
   int tag = (rank1 * 10000 + rank2) * CollTag::MAX_TAG + CollTag::ALLTOALL_TAG;
 #else
 #if 1
-  int tag       = ((rank1 * 10000 + rank2) * CollTag::MAX_TAG + CollTag::ALLTOALL_TAG) * MAX_NB_COMMS +
+  int tag = ((rank1 * 10000 + rank2) * CollTag::MAX_TAG + CollTag::ALLTOALL_TAG) * MAX_NB_COMMS +
             global_comm->unique_id;
 #else
-  int tag = ((rank1 % global_comm->nb_threads * 10000 + rank2) * CollTag::MAX_TAG + CollTag::ALLTOALL_TAG) *
-              MAX_NB_COMMS +
-            global_comm->unique_id;
+  int tag =
+    ((rank1 % global_comm->nb_threads * 10000 + rank2) * CollTag::MAX_TAG + CollTag::ALLTOALL_TAG) *
+      MAX_NB_COMMS +
+    global_comm->unique_id;
 #endif
 #endif
   assert(tag < INT_MAX && tag > 0);
@@ -369,7 +370,8 @@ int collGenerateAlltoallvTag(int rank1, int rank2, CollComm global_comm)
   int tag = ((rank1 * 10000 + rank2) * CollTag::MAX_TAG + CollTag::ALLTOALLV_TAG) * MAX_NB_COMMS +
             global_comm->unique_id;
 #else
-  int tag = ((rank1 % global_comm->nb_threads * 10000 + rank2) * CollTag::MAX_TAG + CollTag::ALLTOALLV_TAG) *
+  int tag = ((rank1 % global_comm->nb_threads * 10000 + rank2) * CollTag::MAX_TAG +
+             CollTag::ALLTOALLV_TAG) *
               MAX_NB_COMMS +
             global_comm->unique_id;
 #endif
