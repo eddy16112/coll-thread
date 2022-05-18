@@ -6,15 +6,15 @@
 
 #include "coll.h"
 
+using namespace legate::comm::coll;
+
 #define TOTAL_RANKS 4
 #define NTHREADS 2
 #define SEND_COUNT 8
-#define COLL_DTYPE CollInt
+#define COLL_DTYPE CollDataType::CollInt
 typedef int DTYPE;
 
 #define VERIFICATION_1
-
-using namespace legate::comm::coll;
 
 pthread_barrier_t barrier;
 

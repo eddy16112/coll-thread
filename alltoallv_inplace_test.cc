@@ -6,14 +6,14 @@
 
 #include "coll.h"
 
+using namespace legate::comm::coll;
+
 #define NTHREADS 16
 #define SEND_COUNT 80
-#define COLL_DTYPE CollInt
+#define COLL_DTYPE CollDataType::CollInt
 typedef int DTYPE;
 
 #define VERIFICATION_2
-
-using namespace legate::comm::coll;
 
 typedef struct thread_args_s {
   int mpi_comm_size;
