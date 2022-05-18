@@ -24,6 +24,7 @@
 
 using namespace Legion;
 using namespace Legion::Mapping;
+using namespace legate::comm;
 
 enum TaskIDs {
   TOP_LEVEL_TASK_ID,
@@ -47,7 +48,7 @@ typedef struct task_args_s{
   int sendcount;
 } task_args_t;
 
-#define COLL_DTYPE collInt
+#define COLL_DTYPE coll::CollInt
 typedef int DTYPE;
 
 class MyMapper : public DefaultMapper {
@@ -391,7 +392,7 @@ int init_uid_task(const Task *task,
                      Context ctx, Runtime *runtime)
 {
   int unique_id = 0;
-  collGetUniqueId(&unique_id);
+  coll::collGetUniqueId(&unique_id);
   unique_id ++;
   return unique_id;
 }
@@ -407,7 +408,7 @@ int init_mapping_task(const Task *task,
   return mpi_rank;
 }
 
-Coll_Comm* init_comm_cpu_task(const Task *task,
+coll::Coll_Comm* init_comm_cpu_task(const Task *task,
                         const std::vector<PhysicalRegion> &regions,
                         Context ctx, Runtime *runtime)
 {
@@ -424,7 +425,7 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
   // }
   // printf("\n");
 
-  collComm_t global_comm = (collComm_t)malloc(sizeof(Coll_Comm));
+  coll::CollComm global_comm = (coll::CollComm)malloc(sizeof(coll::Coll_Comm));
   int global_rank = point;
   int global_comm_size = task->index_domain.get_volume();
   assert(task->futures.size() == (static_cast<size_t>(global_comm_size) + 1));
@@ -439,12 +440,12 @@ Coll_Comm* init_comm_cpu_task(const Task *task,
     //   printf("%d ", mapping_table[i]);
   }
   // if (global_rank == 0) printf("\n");
-  collCommCreate(global_comm, global_comm_size, global_rank, unique_id, mapping_table);
+  coll::collCommCreate(global_comm, global_comm_size, global_rank, unique_id, mapping_table);
   assert(mapping_table[point] == global_comm->mpi_rank);
   // assert(global_comm_size == rect_mapping.volume());
   free(mapping_table);
 #else
-  collCommCreate(global_comm, global_comm_size, global_rank, unique_id, NULL);
+  coll::collCommCreate(global_comm, global_comm_size, global_rank, unique_id, NULL);
 #endif
 
   return global_comm;
@@ -458,7 +459,7 @@ void alltoall_task(const Task *task,
   assert(task->regions.size() == 2);
   const int point = task->index_point.point_data[0];
   const task_args_t task_arg = *((const task_args_t*)task->args);
-  Coll_Comm *global_comm = task->futures[0].get_result<Coll_Comm*>();
+  coll::Coll_Comm *global_comm = task->futures[0].get_result<coll::Coll_Comm*>();
 
   const FieldAccessor<READ_ONLY,DTYPE,1,coord_t,
           Realm::AffineAccessor<DTYPE,1,coord_t> > sendacc(regions[0], FID_X);
@@ -504,7 +505,7 @@ void alltoall_task(const Task *task,
 //                 (void*)recvbuf, 1, COLL_DTYPE,
 //                 global_comm);
 
-  collAlltoall((void*)sendbuf, task_arg.sendcount, COLL_DTYPE, 
+  coll::collAlltoall((void*)sendbuf, task_arg.sendcount, COLL_DTYPE, 
                 (void*)recvbuf, task_arg.sendcount, COLL_DTYPE,
                 global_comm);
 
@@ -516,7 +517,7 @@ void finalize_comm_cpu_task(const Task *task,
                             Context ctx, Runtime *runtime)
 {
   const int point = task->index_point.point_data[0];
-  collComm_t global_comm = task->futures[0].get_result<collComm_t>();
+  coll::CollComm global_comm = task->futures[0].get_result<coll::CollComm>();
 
   assert(global_comm->global_rank == point);
   assert(global_comm->status == true);
@@ -543,7 +544,7 @@ void finalize_comm_cpu_task(const Task *task,
   //   printf("Point %d, mpi rank %d, Finalize Done\n", point, global_comm->mpi_rank);
   // }
   
-  collCommDestroy(global_comm);
+  coll::collCommDestroy(global_comm);
   free(global_comm);
   global_comm = NULL;
 
@@ -624,7 +625,7 @@ int main(int argc, char **argv)
 {
   Runtime::set_top_level_task_id(TOP_LEVEL_TASK_ID);
 
-  collInit(0, NULL);
+  coll::collInit(0, NULL);
 
   {
     TaskVariantRegistrar registrar(TOP_LEVEL_TASK_ID, "top_level");
@@ -657,7 +658,7 @@ int main(int argc, char **argv)
     TaskVariantRegistrar registrar(INIT_COMM_CPU_TASK_ID, "init_comm_cpu");
     registrar.add_constraint(ProcessorConstraint(Processor::LOC_PROC));
     registrar.set_leaf();
-    Runtime::preregister_task_variant<Coll_Comm*, init_comm_cpu_task>(registrar, "init_comm_cpu");
+    Runtime::preregister_task_variant<coll::Coll_Comm*, init_comm_cpu_task>(registrar, "init_comm_cpu");
   }
 
   {
@@ -684,6 +685,6 @@ int main(int argc, char **argv)
   Runtime::add_registration_callback(mapper_registration);
 
   int val = Runtime::start(argc, argv);
-  collFinalize();
+  coll::collFinalize();
   return val;
 }
