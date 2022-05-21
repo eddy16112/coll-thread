@@ -105,12 +105,12 @@ int collCommCreate(CollComm global_comm,
                          NULL,
                          global_comm->global_comm_size);
     thread_comms[global_comm->unique_id].buffers = (void**)malloc(sizeof(void*) * global_comm_size);
-    thread_comms[global_comm->unique_id].displs = (int**)malloc(sizeof(int*) * global_comm_size);
-    for (int i = 0; i < global_comm_size; i++) { 
+    thread_comms[global_comm->unique_id].displs  = (int**)malloc(sizeof(int*) * global_comm_size);
+    for (int i = 0; i < global_comm_size; i++) {
       thread_comms[global_comm->unique_id].buffers[i] = NULL;
-      thread_comms[global_comm->unique_id].displs[i] = NULL;
-    } 
-    __sync_synchronize();               
+      thread_comms[global_comm->unique_id].displs[i]  = NULL;
+    }
+    __sync_synchronize();
     thread_comms[global_comm->unique_id].ready_flag = true;
   }
   __sync_synchronize();
@@ -284,8 +284,8 @@ int collInit(int argc, char* argv[])
   thread_comms.resize(MAX_NB_COMMS);
   for (int i = 0; i < MAX_NB_COMMS; i++) {
     thread_comms[i].ready_flag = false;
-    thread_comms[i].buffers = NULL;
-    thread_comms[i].displs = NULL;
+    thread_comms[i].buffers    = NULL;
+    thread_comms[i].displs     = NULL;
   }
 #endif
   coll_inited = true;
@@ -453,7 +453,7 @@ size_t collGetDtypeSize(CollDataType dtype)
 
 void collUpdateBuffer(CollComm global_comm)
 {
-  int global_rank                                = global_comm->global_rank;
+  int global_rank                         = global_comm->global_rank;
   global_comm->comm->buffers[global_rank] = NULL;
   global_comm->comm->displs[global_rank]  = NULL;
   // printf("rank %d, buffer idx %d\n", global_comm->global_rank, global_comm->current_buffer_idx);
