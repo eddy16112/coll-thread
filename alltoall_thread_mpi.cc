@@ -19,8 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "legion.h"
 #include "coll.h"
+#include "legion.h"
 
 namespace legate {
 namespace comm {
@@ -169,7 +169,7 @@ int collAlltoallMPI(const void* sendbuf,
     // tag: seg idx + rank_idx + tag
     int send_tag = collGenerateAlltoallTag(sendto_global_rank, global_rank, global_comm);
     int recv_tag = collGenerateAlltoallTag(global_rank, recvfrom_global_rank, global_comm);
-  #ifdef DEBUG_PRINT
+#ifdef DEBUG_PRINT
     log_coll.info(
       "i: %d === global_rank %d, mpi rank %d, send %d to %d, send_tag %d, recv %d from %d, "
       "recv_tag %d",
@@ -182,7 +182,7 @@ int collAlltoallMPI(const void* sendbuf,
       recvfrom_global_rank,
       recvfrom_mpi_rank,
       recv_tag);
-  #endif
+#endif
     res = MPI_Sendrecv(src,
                        sendcount,
                        mpi_sendtype,
@@ -244,12 +244,12 @@ int collAlltoallMPI(const void* sendbuf,
     assert(res == MPI_SUCCESS);
 #ifdef DEBUG_PRINT
     log_coll.info("i: %d === global_rank %d, mpi rank %d, send %d to %d, send_tag %d",
-           i,
-           global_rank,
-           global_comm->mpi_rank,
-           i,
-           dest_mpi_rank,
-           tag);
+                  i,
+                  global_rank,
+                  global_comm->mpi_rank,
+                  i,
+                  dest_mpi_rank,
+                  tag);
 #endif
   }
 
@@ -259,12 +259,12 @@ int collAlltoallMPI(const void* sendbuf,
     tag           = collGenerateAlltoallTag(global_rank, i, global_comm);
 #ifdef DEBUG_PRINT
     log_coll.info("i: %d === global_rank %d, mpi rank %d, recv %d from %d, recv_tag %d",
-           i,
-           global_rank,
-           global_comm->mpi_rank,
-           i,
-           dest_mpi_rank,
-           tag);
+                  i,
+                  global_rank,
+                  global_comm->mpi_rank,
+                  i,
+                  dest_mpi_rank,
+                  tag);
 #endif
     res = MPI_Recv(dst, recvcount, mpi_recvtype, dest_mpi_rank, tag, global_comm->comm, &status);
     assert(res == MPI_SUCCESS);

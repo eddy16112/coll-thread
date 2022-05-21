@@ -26,8 +26,8 @@
 #include <stdint.h>
 #endif
 
-#include "legion.h"
 #include "coll.h"
+#include "legion.h"
 
 namespace legate {
 namespace comm {
@@ -175,10 +175,10 @@ int collAlltoallv(const void* sendbuf,
                   CollComm global_comm)
 {
   log_coll.print("Alltoallv: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d",
-         global_comm->global_rank,
-         global_comm->mpi_rank,
-         global_comm->unique_id,
-         global_comm->global_comm_size);
+                 global_comm->global_rank,
+                 global_comm->mpi_rank,
+                 global_comm->unique_id,
+                 global_comm->global_comm_size);
 #if defined(LEGATE_USE_GASNET)
   return collAlltoallvMPI(
     sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, rdispls, recvtype, global_comm);
@@ -197,10 +197,10 @@ int collAlltoall(const void* sendbuf,
                  CollComm global_comm)
 {
   log_coll.print("Alltoall: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d",
-         global_comm->global_rank,
-         global_comm->mpi_rank,
-         global_comm->unique_id,
-         global_comm->global_comm_size);
+                 global_comm->global_rank,
+                 global_comm->mpi_rank,
+                 global_comm->unique_id,
+                 global_comm->global_comm_size);
 #if defined(LEGATE_USE_GASNET)
   return collAlltoallMPI(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, global_comm);
 #else
@@ -218,10 +218,10 @@ int collGather(const void* sendbuf,
                CollComm global_comm)
 {
   log_coll.print("Gather: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d",
-        global_comm->global_rank,
-        global_comm->mpi_rank,
-        global_comm->unique_id,
-        global_comm->global_comm_size);
+                 global_comm->global_rank,
+                 global_comm->mpi_rank,
+                 global_comm->unique_id,
+                 global_comm->global_comm_size);
 #if defined(LEGATE_USE_GASNET)
   return collGatherMPI(
     sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, root, global_comm);
@@ -240,10 +240,10 @@ int collAllgather(const void* sendbuf,
                   CollComm global_comm)
 {
   log_coll.print("Allgather: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d",
-         global_comm->global_rank,
-         global_comm->mpi_rank,
-         global_comm->unique_id,
-         global_comm->global_comm_size);
+                 global_comm->global_rank,
+                 global_comm->mpi_rank,
+                 global_comm->unique_id,
+                 global_comm->global_comm_size);
 #if defined(LEGATE_USE_GASNET)
   return collAllgatherMPI(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, global_comm);
 #else
@@ -255,10 +255,10 @@ int collAllgather(const void* sendbuf,
 int collBcast(void* buf, int count, CollDataType type, int root, CollComm global_comm)
 {
   log_coll.print("Bcast: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d",
-         global_comm->global_rank,
-         global_comm->mpi_rank,
-         global_comm->unique_id,
-         global_comm->global_comm_size);
+                 global_comm->global_rank,
+                 global_comm->mpi_rank,
+                 global_comm->unique_id,
+                 global_comm->global_comm_size);
 #if defined(LEGATE_USE_GASNET)
   return collBcast(buf, count, type, root, global_comm);
 #else

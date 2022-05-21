@@ -19,8 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "legion.h"
 #include "coll.h"
+#include "legion.h"
 
 namespace legate {
 namespace comm {
@@ -71,13 +71,13 @@ int collAllgatherLocal(const void* sendbuf,
     char* dst = (char*)recvbuf + (ptrdiff_t)recvfrom_global_rank * recvtype_extent * recvcount;
 #ifdef DEBUG_PRINT
     log_coll.info("i: %d === global_rank %d, dtype %d, copy rank %d (%p) to rank %d (%p)",
-           i,
-           global_rank,
-           sendtype_extent,
-           recvfrom_global_rank,
-           src,
-           global_rank,
-           dst);
+                  i,
+                  global_rank,
+                  sendtype_extent,
+                  recvfrom_global_rank,
+                  src,
+                  global_rank,
+                  dst);
 #endif
     memcpy(dst, src, sendcount * sendtype_extent);
   }

@@ -19,8 +19,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "legion.h"
 #include "coll.h"
+#include "legion.h"
 
 namespace legate {
 namespace comm {
