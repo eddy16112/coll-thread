@@ -1,4 +1,5 @@
 set -e
+set -x
 mpirun -np 1 ./alltoall_test
 mpirun -np 1 ./alltoallv_test
 mpirun -np 1 ./myalltoallv_test
