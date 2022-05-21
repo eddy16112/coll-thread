@@ -19,11 +19,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "legion.h"
 #include "coll.h"
 
 namespace legate {
 namespace comm {
 namespace coll {
+
+using namespace Legion;
+extern Logger log_coll;
 
 int collAllgatherLocal(const void* sendbuf,
                        int sendcount,
@@ -66,7 +70,7 @@ int collAllgatherLocal(const void* sendbuf,
     char* src = (char*)global_comm->comm->buffers[recvfrom_global_rank];
     char* dst = (char*)recvbuf + (ptrdiff_t)recvfrom_global_rank * recvtype_extent * recvcount;
 #ifdef DEBUG_PRINT
-    printf("i: %d === global_rank %d, dtype %d, copy rank %d (%p) to rank %d (%p)\n",
+    log_coll.info("i: %d === global_rank %d, dtype %d, copy rank %d (%p) to rank %d (%p)",
            i,
            global_rank,
            sendtype_extent,
@@ -85,7 +89,7 @@ int collAllgatherLocal(const void* sendbuf,
 
   collUpdateBuffer(global_comm);
 
-  return collSuccess;
+  return CollSuccess;
 }
 
 }  // namespace coll

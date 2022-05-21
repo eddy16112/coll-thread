@@ -1,18 +1,23 @@
-DEBUG		?= 0
+DEBUG		?= 1
 COLL_NETWORKS	?= mpi
 
 ifeq ($(strip $(COLL_NETWORKS)),mpi)
-CXX				= mpicxx
+CXX			= mpicxx
 else
 CXX = g++
 endif
-AR				= ar
+AR			= ar
 CC_FLAGS	?=
 LD_FLAGS	?= -lpthread
 INC_FLAGS	?=
 SO_FLAGS	?=
-SHARED_OBJECTS ?= 0
+SHARED_OBJECTS ?= 1
 COLL_LIBS := -L. -lcoll
+
+# CUDA_DIR = /usr/local/cuda-11.1
+LEGION_DIR=/scratch2/wwu/legion-install/install
+INC_FLAGS	+= -I$(LEGION_DIR)/include 
+LD_FLAGS	+= -L$(LEGION_DIR)/lib -lrealm -llegion -ldl -lrt
 
 CFLAGS		?=
 LDFLAGS		?=
@@ -22,7 +27,7 @@ LD_FLAGS	+= $(LDFLAGS)
 ifeq ($(strip $(SHARED_OBJECTS)),0)
 SLIB_COLL     := libcoll.a
 else
-CC_FLAGS	+= -fPIC
+CC_FLAGS	  += -fPIC
 ifeq ($(shell uname -s),Darwin)
 SLIB_COLL     := libcoll.dylib
 else
@@ -90,11 +95,11 @@ clean:
 ifeq ($(strip $(SHARED_OBJECTS)),0)
 $(SLIB_COLL) : $(COLL_OBJS)
 	rm -f $@
-	$(AR) rcs $@ $^
+	$(AR) rcs $@ $^ $(LEGION_DIR)/lib/librealm.a $(LEGION_DIR)/lib/liblegion.a
 else
 $(SLIB_COLL) : $(COLL_OBJS)
 	rm -f $@
-	$(CXX) $(SO_FLAGS) -o $@ $(COLL_OBJS)
+	$(CXX) $(SO_FLAGS) -o $@ $(COLL_OBJS) $(LD_FLAGS)
 endif
 
 $(COLL_OBJS) : %.cc.o : %.cc

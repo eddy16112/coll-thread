@@ -19,11 +19,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "legion.h"
 #include "coll.h"
 
 namespace legate {
 namespace comm {
 namespace coll {
+
+using namespace Legion;
+extern Logger log_coll;
 
 int collGatherMPI(const void* sendbuf,
                   int sendcount,
@@ -56,7 +60,7 @@ int collGatherMPI(const void* sendbuf,
   if (global_rank != root) {
     tag = collGenerateGatherTag(global_rank, global_comm);
 #ifdef DEBUG_PRINT
-    printf("Gather Send global_rank %d, mpi rank %d, send to %d (%d), tag %d\n",
+    log_coll.info("Gather Send global_rank %d, mpi rank %d, send to %d (%d), tag %d",
            global_rank,
            global_comm->mpi_rank,
            root,
@@ -77,7 +81,7 @@ int collGatherMPI(const void* sendbuf,
     assert(i == global_comm->mapping_table.global_rank[i]);
     tag = collGenerateGatherTag(i, global_comm);
 #ifdef DEBUG_PRINT
-    printf("Gather i: %d === global_rank %d, mpi rank %d, recv %p, from %d (%d), tag %d\n",
+    log_coll.info("Gather i: %d === global_rank %d, mpi rank %d, recv %p, from %d (%d), tag %d",
            i,
            global_rank,
            global_comm->mpi_rank,
@@ -97,7 +101,7 @@ int collGatherMPI(const void* sendbuf,
     dst += incr;
   }
 
-  return collSuccess;
+  return CollSuccess;
 }
 
 }  // namespace coll

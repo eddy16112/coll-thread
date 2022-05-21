@@ -4,7 +4,10 @@
 #include <assert.h>
 #include <pthread.h>
 
+#include "realm.h"
 #include "coll.h"
+
+using namespace Realm;
 
 using namespace legate::comm::coll;
 
@@ -226,6 +229,10 @@ int main( int argc, char *argv[] )
   int mpi_comm_size = 1;
 
   collInit(0, NULL);
+
+  Runtime rt;
+
+  rt.init(&argc, &argv);
 
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  
