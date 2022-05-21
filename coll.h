@@ -20,6 +20,7 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <vector>
 
 #if defined(LEGATE_USE_GASNET)
 #include <mpi.h>
@@ -53,14 +54,12 @@ struct RankMappingTable {
 
 #define MAX_NB_THREADS 128
 
-struct ThreadSharedData {
+struct ThreadComm {
   void* buffers[MAX_NB_THREADS];
   int* displs[MAX_NB_THREADS];
   pthread_barrier_t barrier;
   bool ready_flag;
 };
-
-extern volatile ThreadSharedData shared_data[MAX_NB_COMMS];
 #endif
 
 enum class CollDataType : int {
@@ -80,7 +79,7 @@ typedef struct Coll_Comm_s {
   MPI_Comm comm;
   RankMappingTable mapping_table;
 #else
-  volatile ThreadSharedData* shared_data;
+  volatile ThreadComm* shared_data;
 #endif
   int mpi_rank;
   int mpi_comm_size;

@@ -37,13 +37,11 @@ namespace coll {
 #define USE_NEW_COMM
 
 #if defined(USE_NEW_COMM)
-MPI_Comm communicators[MAX_NB_COMMS];
+static std::vector<MPI_Comm> mpi_comms;
 #endif
 
 #else
-
-volatile ThreadSharedData shared_data[MAX_NB_COMMS];
-
+static std::vector<ThreadComm> thread_comms;
 #endif
 
 static std::atomic<int> current_unique_id(0);
@@ -65,7 +63,7 @@ int collCommCreate(CollComm global_comm,
   int *tag_ub, flag, res;
 #if defined(USE_NEW_COMM)
   int compare_result;
-  MPI_Comm comm = communicators[unique_id];
+  MPI_Comm comm = mpi_comms[unique_id];
   res           = MPI_Comm_compare(comm, MPI_COMM_WORLD, &compare_result);
   assert(res == MPI_SUCCESS);
   assert(compare_result = MPI_CONGRUENT);
@@ -92,15 +90,15 @@ int collCommCreate(CollComm global_comm,
   global_comm->mpi_comm_size = 1;
   global_comm->mpi_rank      = 0;
   if (global_comm->global_rank == 0) {
-    pthread_barrier_init((pthread_barrier_t*)&(shared_data[global_comm->unique_id].barrier),
+    pthread_barrier_init((pthread_barrier_t*)&(thread_comms[global_comm->unique_id].barrier),
                          NULL,
                          global_comm->global_comm_size);
-    shared_data[global_comm->unique_id].ready_flag = true;
+    thread_comms[global_comm->unique_id].ready_flag = true;
   }
   __sync_synchronize();
-  volatile ThreadSharedData* data = &(shared_data[global_comm->unique_id]);
-  while (data->ready_flag != true) { data = &(shared_data[global_comm->unique_id]); }
-  global_comm->shared_data = &(shared_data[global_comm->unique_id]);
+  volatile ThreadComm* data = &(thread_comms[global_comm->unique_id]);
+  while (data->ready_flag != true) { data = &(thread_comms[global_comm->unique_id]); }
+  global_comm->shared_data = &(thread_comms[global_comm->unique_id]);
   assert(global_comm->shared_data->ready_flag == true);
 #endif
   if (global_comm->global_comm_size % global_comm->mpi_comm_size == 0) {
@@ -124,12 +122,12 @@ int collCommDestroy(CollComm global_comm)
   }
 #else
   if (global_comm->global_rank == 0) {
-    pthread_barrier_destroy((pthread_barrier_t*)&(shared_data[global_comm->unique_id].barrier));
-    shared_data[global_comm->unique_id].ready_flag = false;
+    pthread_barrier_destroy((pthread_barrier_t*)&(thread_comms[global_comm->unique_id].barrier));
+    thread_comms[global_comm->unique_id].ready_flag = false;
   }
   __sync_synchronize();
-  volatile ThreadSharedData* data = &(shared_data[global_comm->unique_id]);
-  while (data->ready_flag != false) { data = &(shared_data[global_comm->unique_id]); }
+  volatile ThreadComm* data = &(thread_comms[global_comm->unique_id]);
+  while (data->ready_flag != false) { data = &(thread_comms[global_comm->unique_id]); }
 #endif
   global_comm->status = false;
   return collSuccess;
@@ -249,17 +247,19 @@ int collInit(int argc, char* argv[])
       "MPI_THREAD_MULTIPLE\n");
   }
 #if defined(USE_NEW_COMM)
+  mpi_comms.resize(MAX_NB_COMMS, MPI_COMM_NULL);
   for (int i = 0; i < MAX_NB_COMMS; i++) {
-    res = MPI_Comm_dup(MPI_COMM_WORLD, &communicators[i]);
+    res = MPI_Comm_dup(MPI_COMM_WORLD, &mpi_comms[i]);
     assert(res == MPI_SUCCESS);
   }
 #endif
 #else
+  thread_comms.resize(MAX_NB_COMMS);
   for (int i = 0; i < MAX_NB_COMMS; i++) {
-    shared_data[i].ready_flag = false;
+    thread_comms[i].ready_flag = false;
     for (int j = 0; j < MAX_NB_THREADS; j++) {
-      shared_data[i].buffers[j] = NULL;
-      shared_data[i].displs[j]  = NULL;
+      thread_comms[i].buffers[j] = NULL;
+      thread_comms[i].displs[j]  = NULL;
     }
   }
 #endif
@@ -275,13 +275,14 @@ int collFinalize(void)
 #if defined(USE_NEW_COMM)
   int res;
   for (int i = 0; i < MAX_NB_COMMS; i++) {
-    res = MPI_Comm_free(&communicators[i]);
+    res = MPI_Comm_free(&mpi_comms[i]);
     assert(res == MPI_SUCCESS);
   }
+  mpi_comms.clear();
 #endif
   return MPI_Finalize();
 #else
-  for (int i = 0; i < MAX_NB_COMMS; i++) { assert(shared_data[i].ready_flag == false); }
+  for (int i = 0; i < MAX_NB_COMMS; i++) { assert(thread_comms[i].ready_flag == false); }
   return collSuccess;
 #endif
 }
@@ -301,16 +302,6 @@ int collGetUniqueId(int* id)
 #endif
   return collSuccess;
 }
-
-// MPI_Datatype CollChar   = MPI_CHAR;
-// MPI_Datatype CollInt8   = MPI_INT8_T;
-// MPI_Datatype CollUint8  = MPI_UINT8_T;
-// MPI_Datatype CollInt    = MPI_INT;
-// MPI_Datatype CollUint32 = MPI_UINT32_T;
-// MPI_Datatype CollInt64  = MPI_INT64_T;
-// MPI_Datatype CollUint64 = MPI_UINT64_T;
-// MPI_Datatype CollFloat  = MPI_FLOAT;
-// MPI_Datatype CollDouble = MPI_DOUBLE;
 
 #if defined(LEGATE_USE_GASNET)
 MPI_Datatype collDtypeToMPIDtype(CollDataType dtype)
