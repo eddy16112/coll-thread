@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include "realm.h"
 #include "coll.h"
@@ -219,18 +220,22 @@ void *thread_func(void *thread_args)
         rdispls[i] = i * global_rank;
         sdispls[i] = (i * (i+1))/2;
     }
-    collAlltoallv( sbuf, sendcounts, sdispls, CollDataType::CollInt,
-                       rbuf, recvcounts, rdispls, CollDataType::CollInt, &global_comm );
-    /* Check rbuf */
-    for (int i=0; i<global_comm_size; i++) {
-        p = rbuf + rdispls[i];
-        for (int j=0; j<global_rank; j++) {
-            // if (global_rank == 2) printf("%d ", p[j]);
-            if (p[j] != i * 100 + (global_rank*(global_rank+1))/2 + j) {
-                fprintf( stderr, "[%d] got %d expected %d for %dth\n",
-                                    global_rank, p[j],(i*(i+1))/2 + j, j );
-                fflush(stderr);
-                err++;
+    for (int i = 0; i< 5; i++) {
+        collAlltoallv( sbuf, sendcounts, sdispls, CollDataType::CollInt,
+                        rbuf, recvcounts, rdispls, CollDataType::CollInt, &global_comm );
+        // if (global_comm.global_rank%2 == 0) sleep(3);
+        printf("rank %d, iter %d\n", global_rank, i);
+        /* Check rbuf */
+        for (int i=0; i<global_comm_size; i++) {
+            p = rbuf + rdispls[i];
+            for (int j=0; j<global_rank; j++) {
+                // if (global_rank == 2) printf("%d ", p[j]);
+                if (p[j] != i * 100 + (global_rank*(global_rank+1))/2 + j) {
+                    fprintf( stderr, "[%d] got %d expected %d for %dth\n",
+                                        global_rank, p[j],(i*(i+1))/2 + j, j );
+                    fflush(stderr);
+                    err++;
+                }
             }
         }
     }
