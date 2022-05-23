@@ -78,13 +78,14 @@ COLL_TEST_SRC	+= alltoall_test.cc \
 								 myalltoallv_test.cc \
 								 alltoallv_con_test.cc \
 								 alltoallv_con_test2.cc \
-								 alltoallv_inplace_test.cc
+								 alltoallv_inplace_test.cc \
+								 comm_test.cc
 
 COLL_TEST_OBJS	:= $(COLL_TEST_SRC:.cc=.cc.o)
 
 .PHONY: build clean
 
-OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test
+OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test comm_test
 
 build: $(OUTFILE)
 
@@ -137,6 +138,9 @@ alltoallv_con_test2: $(SLIB_COLL) alltoallv_con_test2.cc.o
 
 alltoallv_inplace_test: $(SLIB_COLL) alltoallv_inplace_test.cc.o
 	$(CXX) -o $@ alltoallv_inplace_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
+
+comm_test: $(SLIB_COLL) comm_test.cc.o
+	$(CXX) -o $@ comm_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
 
 # alltoall_thread2: alltoall_thread2.o
 # 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)

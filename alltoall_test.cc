@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include "realm.h"
 #include "coll.h"
@@ -64,6 +65,9 @@ int main( int argc, char *argv[] )
   int mpi_rank = 0;
   int global_rank = 0;
   int mpi_comm_size = 1;
+
+  // printf("pid %ld\n", getpid());
+  // sleep(10);
 
   collInit(argc, argv);
 
