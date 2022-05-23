@@ -14,10 +14,15 @@ SO_FLAGS	?=
 SHARED_OBJECTS ?= 1
 COLL_LIBS := -L. -lcoll
 
-# CUDA_DIR = /usr/local/cuda-11.1
-LEGION_DIR=/scratch2/wwu/legion-install/install
+CUDA_DIR = /usr/local/cuda-11.1
+GASNET_DIR=/scratch2/wwu/install/gasnet
+LEGION_DIR=/scratch2/wwu/legion-install-gasnet
 INC_FLAGS	+= -I$(LEGION_DIR)/include 
-LD_FLAGS	+= -L$(LEGION_DIR)/lib -lrealm -llegion -ldl -lrt
+LD_FLAGS	+= -L$(LEGION_DIR)/lib -lrealm -llegion -ldl -lrt -L$(GASNET_DIR)/lib -lgasnet-ibv-par -libverbs -L$(CUDA_DIR)/lib -lcuda
+
+# LEGION_DIR=/scratch2/wwu/legion-install/install
+# INC_FLAGS	+= -I$(LEGION_DIR)/include
+# LD_FLAGS	+= -L$(LEGION_DIR)/lib -lrealm -llegion -ldl -lrt
 
 CFLAGS		?=
 LDFLAGS		?=

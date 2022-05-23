@@ -196,6 +196,9 @@ int main( int argc, char *argv[] )
   free(send_buffs);
   free(recv_buffs);
 
+  rt.shutdown();
+  rt.wait_for_shutdown();
+
   collFinalize();
   
   return 0;
