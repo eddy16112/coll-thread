@@ -34,6 +34,11 @@ int main( int argc, char *argv[] )
   Runtime rt;
 
   rt.init(&argc, &argv);
+
+  MPI_Comm  mpi_comm;  
+  MPI_Comm_dup(MPI_COMM_WORLD, &mpi_comm);
+  MPI_Comm_rank(mpi_comm, &mpi_rank);
+  MPI_Comm_size(mpi_comm, &mpi_comm_size);
   
   for (int i = 0; i < MAX_NB_COMMS; i++) {
     res = MPI_Comm_free(&mpi_comms[i]);
