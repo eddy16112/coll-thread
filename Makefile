@@ -12,17 +12,17 @@ LD_FLAGS	?= -lpthread
 INC_FLAGS	?=
 SO_FLAGS	?=
 SHARED_OBJECTS ?= 1
-COLL_LIBS := -L. -lcoll
+COLL_LIBS := -L. -lcoll -lpthread
 
-CUDA_DIR = /usr/local/cuda-11.1
-GASNET_DIR=/scratch2/wwu/install/gasnet
-LEGION_DIR=/scratch2/wwu/legion-install-gasnet
-INC_FLAGS	+= -I$(LEGION_DIR)/include 
-LD_FLAGS	+= -L$(LEGION_DIR)/lib -lrealm -llegion -ldl -lrt -L$(GASNET_DIR)/lib -lgasnet-ibv-par -libverbs -L$(CUDA_DIR)/lib -lcuda
+# CUDA_DIR = /usr/local/cuda-11.1
+# GASNET_DIR=/scratch2/wwu/install/gasnet
+# LEGION_DIR=/scratch2/wwu/legion-install-gasnet
+# INC_FLAGS	+= -I$(LEGION_DIR)/include 
+# LD_FLAGS	+= -L$(LEGION_DIR)/lib -lrealm -llegion -ldl -lrt -L$(GASNET_DIR)/lib -lgasnet-ibv-par -libverbs -L$(CUDA_DIR)/lib -lcuda
 
-# LEGION_DIR=/scratch2/wwu/legion-install/install
-# INC_FLAGS	+= -I$(LEGION_DIR)/include
-# LD_FLAGS	+= -L$(LEGION_DIR)/lib -lrealm -llegion -ldl -lrt
+LEGION_DIR=/scratch2/wwu/legion-install/install
+INC_FLAGS	+= -I$(LEGION_DIR)/include
+LD_FLAGS	+= -L$(LEGION_DIR)/lib -lrealm -llegion -ldl -lrt
 
 CFLAGS		?=
 LDFLAGS		?=
@@ -90,7 +90,7 @@ COLL_TEST_OBJS	:= $(COLL_TEST_SRC:.cc=.cc.o)
 
 .PHONY: build clean
 
-OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test comm_test
+OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test
 
 build: $(OUTFILE)
 
@@ -115,37 +115,34 @@ $(COLL_TEST_OBJS) : %.cc.o : %.cc
 	$(CXX) -c -o $@ $< $(CC_FLAGS) $(INC_FLAGS)
 
 alltoall_test: $(SLIB_COLL) alltoall_test.cc.o
-	$(CXX) -o $@ alltoall_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
+	$(CXX) -o $@ alltoall_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 gather_test: $(SLIB_COLL) gather_test.cc.o
-	$(CXX) -o $@ gather_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
+	$(CXX) -o $@ gather_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 allgather_test: $(SLIB_COLL) allgather_test.cc.o
-	$(CXX) -o $@ allgather_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
+	$(CXX) -o $@ allgather_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 bcast_test: $(SLIB_COLL) bcast_test.cc.o
-	$(CXX) -o $@ bcast_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
+	$(CXX) -o $@ bcast_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 alltoall_fake_sub_test: $(SLIB_COLL) alltoall_fake_sub_test.cc.o
-	$(CXX) -o $@ alltoall_fake_sub_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
+	$(CXX) -o $@ alltoall_fake_sub_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 alltoallv_test: $(SLIB_COLL) alltoallv_test.cc.o
-	$(CXX) -o $@ alltoallv_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
+	$(CXX) -o $@ alltoallv_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 myalltoallv_test: $(SLIB_COLL) myalltoallv_test.cc.o
-	$(CXX) -o $@ myalltoallv_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
+	$(CXX) -o $@ myalltoallv_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 alltoallv_con_test: $(SLIB_COLL) alltoallv_con_test.cc.o
-	$(CXX) -o $@ alltoallv_con_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
+	$(CXX) -o $@ alltoallv_con_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 alltoallv_con_test2: $(SLIB_COLL) alltoallv_con_test2.cc.o
-	$(CXX) -o $@ alltoallv_con_test2.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
+	$(CXX) -o $@ alltoallv_con_test2.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 alltoallv_inplace_test: $(SLIB_COLL) alltoallv_inplace_test.cc.o
-	$(CXX) -o $@ alltoallv_inplace_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
-
-comm_test: $(SLIB_COLL) comm_test.cc.o
-	$(CXX) -o $@ comm_test.cc.o $(CC_FLAGS) $(LD_FLAGS) $(COLL_LIBS)
+	$(CXX) -o $@ alltoallv_inplace_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 # alltoall_thread2: alltoall_thread2.o
 # 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)
