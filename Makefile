@@ -1,5 +1,5 @@
-DEBUG		?= 1
-COLL_NETWORKS	?= mpi
+DEBUG		?= 0
+COLL_NETWORKS	?= local
 
 ifeq ($(strip $(COLL_NETWORKS)),mpi)
 CXX			= mpicxx
