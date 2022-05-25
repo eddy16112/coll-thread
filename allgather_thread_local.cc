@@ -65,16 +65,17 @@ int collAllgatherLocal(const void* sendbuf,
     while (global_comm->comm->buffers[recvfrom_global_rank] == nullptr)
       ;
     const void* src = global_comm->comm->buffers[recvfrom_global_rank];
-    char* dst = static_cast<char*>(recvbuf) + static_cast<ptrdiff_t>(recvfrom_global_rank) * recvtype_extent * recvcount;
+    char* dst       = static_cast<char*>(recvbuf) +
+                static_cast<ptrdiff_t>(recvfrom_global_rank) * recvtype_extent * recvcount;
 #ifdef DEBUG_PRINT
     log_coll.debug("i: %d === global_rank %d, dtype %d, copy rank %d (%p) to rank %d (%p)",
-                  i,
-                  global_rank,
-                  sendtype_extent,
-                  recvfrom_global_rank,
-                  src,
-                  global_rank,
-                  dst);
+                   i,
+                   global_rank,
+                   sendtype_extent,
+                   recvfrom_global_rank,
+                   src,
+                   global_rank,
+                   dst);
 #endif
     memcpy(dst, src, sendcount * sendtype_extent);
   }

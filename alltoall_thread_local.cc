@@ -42,7 +42,7 @@ int collAlltoallLocal(const void* sendbuf,
   assert(recvcount == sendcount);
   assert(sendtype == recvtype);
 
-  int total_size = global_comm->global_comm_size;
+  int total_size  = global_comm->global_comm_size;
   int global_rank = global_comm->global_rank;
 
   int sendtype_extent = collGetDtypeSize(sendtype);
@@ -63,15 +63,17 @@ int collAlltoallLocal(const void* sendbuf,
   __sync_synchronize();
 
   int recvfrom_global_rank;
-  int recvfrom_seg_id = global_rank;
-  const void* src_base      = nullptr;
+  int recvfrom_seg_id  = global_rank;
+  const void* src_base = nullptr;
   for (int i = 1; i < total_size + 1; i++) {
     recvfrom_global_rank = (global_rank + total_size - i) % total_size;
     while (global_comm->comm->buffers[recvfrom_global_rank] == nullptr)
       ;
     src_base  = global_comm->comm->buffers[recvfrom_global_rank];
-    char* src = static_cast<char*>(const_cast<void*>(src_base)) + static_cast<ptrdiff_t>(recvfrom_seg_id) * sendtype_extent * sendcount;
-    char* dst = static_cast<char*>(recvbuf) + static_cast<ptrdiff_t>(recvfrom_global_rank) * recvtype_extent * recvcount;
+    char* src = static_cast<char*>(const_cast<void*>(src_base)) +
+                static_cast<ptrdiff_t>(recvfrom_seg_id) * sendtype_extent * sendcount;
+    char* dst = static_cast<char*>(recvbuf) +
+                static_cast<ptrdiff_t>(recvfrom_global_rank) * recvtype_extent * recvcount;
 #ifdef DEBUG_PRINT
     log_coll.debug(
       "i: %d === global_rank %d, dtype %d, copy rank %d (seg %d, %p) to rank %d (seg %d, %p)",
