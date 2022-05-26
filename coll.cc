@@ -47,7 +47,7 @@ enum CollTag : int {
 };
 
 static std::vector<MPI_Comm> mpi_comms;
-#else // undef LEGATE_USE_GASNET
+#else  // undef LEGATE_USE_GASNET
 static std::vector<ThreadComm> thread_comms;
 #endif
 
@@ -399,7 +399,7 @@ int collGenerateGatherTag(int rank, CollComm global_comm)
   return tag;
 }
 
-#else // undef LEGATE_USE_GASNET
+#else  // undef LEGATE_USE_GASNET
 size_t collGetDtypeSize(CollDataType dtype)
 {
   if (dtype == CollDataType::CollInt8 || dtype == CollDataType::CollChar) {
