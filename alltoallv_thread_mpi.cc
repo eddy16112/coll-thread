@@ -154,7 +154,7 @@ int collAlltoallvMPI(const void* sendbuf,
   MPI_Type_get_extent(mpi_recvtype, &lb, &recvtype_extent);
 
   void* sendbuf_tmp = const_cast<void*>(sendbuf);
-  
+
   // MPI_IN_PLACE
   if (sendbuf == recvbuf) {
     // not sure which way is better
