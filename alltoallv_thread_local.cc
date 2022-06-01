@@ -30,13 +30,13 @@ using namespace Legion;
 extern Logger log_coll;
 
 int alltoallvLocal(const void* sendbuf,
-                       const int sendcounts[],
-                       const int sdispls[],
-                       void* recvbuf,
-                       const int recvcounts[],
-                       const int rdispls[],
-                       CollDataType type,
-                       CollComm global_comm)
+                   const int sendcounts[],
+                   const int sdispls[],
+                   void* recvbuf,
+                   const int recvcounts[],
+                   const int rdispls[],
+                   CollDataType type,
+                   CollComm global_comm)
 {
   int res;
 

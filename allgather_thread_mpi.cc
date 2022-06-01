@@ -25,11 +25,8 @@ namespace legate {
 namespace comm {
 namespace coll {
 
-int allgatherMPI(const void* sendbuf,
-                 void* recvbuf,
-                 int count,
-                 CollDataType type,
-                 CollComm global_comm)
+int allgatherMPI(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm)
 {
   int total_size  = global_comm->global_comm_size;
   int global_rank = global_comm->global_rank;
@@ -42,9 +39,7 @@ int allgatherMPI(const void* sendbuf,
   void* sendbuf_tmp = const_cast<void*>(sendbuf);
 
   // MPI_IN_PLACE
-  if (sendbuf == recvbuf) {
-    sendbuf_tmp = collAllocateInplaceBuffer(recvbuf, type_extent * count);
-  }
+  if (sendbuf == recvbuf) { sendbuf_tmp = collAllocateInplaceBuffer(recvbuf, type_extent * count); }
 
   gatherMPI(sendbuf_tmp, recvbuf, count, type, 0, global_comm);
 

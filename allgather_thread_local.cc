@@ -29,11 +29,8 @@ namespace coll {
 using namespace Legion;
 extern Logger log_coll;
 
-int allgatherLocal(const void* sendbuf,
-                   void* recvbuf,
-                   int count,
-                   CollDataType type,
-                   CollComm global_comm)
+int allgatherLocal(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm)
 {
   int total_size  = global_comm->global_comm_size;
   int global_rank = global_comm->global_rank;
@@ -43,9 +40,7 @@ int allgatherLocal(const void* sendbuf,
   const void* sendbuf_tmp = sendbuf;
 
   // MPI_IN_PLACE
-  if (sendbuf == recvbuf) {
-    sendbuf_tmp = collAllocateInplaceBuffer(recvbuf, type_extent * count);
-  }
+  if (sendbuf == recvbuf) { sendbuf_tmp = collAllocateInplaceBuffer(recvbuf, type_extent * count); }
 
   global_comm->comm->buffers[global_rank] = sendbuf_tmp;
   __sync_synchronize();

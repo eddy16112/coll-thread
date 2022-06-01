@@ -29,12 +29,8 @@ namespace coll {
 using namespace Legion;
 extern Logger log_coll;
 
-int gatherMPI(const void* sendbuf,
-              void* recvbuf,
-              int count,
-              CollDataType type,
-              int root,
-              CollComm global_comm)
+int gatherMPI(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, int root, CollComm global_comm)
 {
   int res;
   MPI_Status status;
@@ -90,8 +86,7 @@ int gatherMPI(const void* sendbuf,
     if (global_rank == i) {
       memcpy(dst, sendbuf, incr);
     } else {
-      res =
-        MPI_Recv(dst, count, mpi_type, recvfrom_mpi_rank, tag, global_comm->comm, &status);
+      res = MPI_Recv(dst, count, mpi_type, recvfrom_mpi_rank, tag, global_comm->comm, &status);
       assert(res == MPI_SUCCESS);
     }
     dst += incr;

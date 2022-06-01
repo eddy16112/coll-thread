@@ -97,24 +97,14 @@ int collAlltoallv(const void* sendbuf,
                   CollDataType type,
                   CollComm global_comm);
 
-int collAlltoall(const void* sendbuf,
-                 void* recvbuf,
-                 int count,
-                 CollDataType type,
-                 CollComm global_comm);
+int collAlltoall(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm);
 
-int collGather(const void* sendbuf,
-               void* recvbuf,
-               int count,
-               CollDataType type,
-               int root,
-               CollComm global_comm);
+int collGather(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, int root, CollComm global_comm);
 
-int collAllgather(const void* sendbuf,
-                  void* recvbuf,
-                  int count,
-                  CollDataType type,
-                  CollComm global_comm);
+int collAllgather(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm);
 
 int collBcast(void* buf, int count, CollDataType type, int root, CollComm global_comm);
 
@@ -135,24 +125,14 @@ int alltoallvMPI(const void* sendbuf,
                  CollDataType type,
                  CollComm global_comm);
 
-int alltoallMPI(const void* sendbuf,
-                    void* recvbuf,
-                    int count,
-                    CollDataType type,
-                    CollComm global_comm);
+int alltoallMPI(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm);
 
-int gatherMPI(const void* sendbuf,
-              void* recvbuf,
-              int count,
-              CollDataType type,
-              int root,
-              CollComm global_comm);
+int gatherMPI(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, int root, CollComm global_comm);
 
-int allgatherMPI(const void* sendbuf,
-                 void* recvbuf,
-                 int count,
-                 CollDataType type,
-                 CollComm global_comm);
+int allgatherMPI(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm);
 
 int bcastMPI(void* buf, int count, CollDataType type, int root, CollComm global_comm);
 
@@ -177,17 +157,11 @@ int alltoallvLocal(const void* sendbuf,
                    CollDataType type,
                    CollComm global_comm);
 
-int alltoallLocal(const void* sendbuf,
-                  void* recvbuf,
-                  int count,
-                  CollDataType type,
-                  CollComm global_comm);
+int alltoallLocal(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm);
 
-int allgatherLocal(const void* sendbuf,
-                   void* recvbuf,
-                   int count,
-                   CollDataType type,
-                   CollComm global_comm);
+int allgatherLocal(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm);
 
 void collUpdateBuffer(CollComm global_comm);
 

@@ -29,11 +29,8 @@ namespace coll {
 using namespace Legion;
 extern Logger log_coll;
 
-int alltoallLocal(const void* sendbuf,
-                      void* recvbuf,
-                      int count,
-                      CollDataType type,
-                      CollComm global_comm)
+int alltoallLocal(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm)
 {
   int res;
 

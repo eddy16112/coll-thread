@@ -118,11 +118,8 @@ static int alltoallMPIInplace(void* recvbuf,
   return CollSuccess;
 }
 
-int alltoallMPI(const void* sendbuf,
-                void* recvbuf,
-                int count,
-                CollDataType type,
-                CollComm global_comm)
+int alltoallMPI(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm)
 {
   int res;
   MPI_Status status;

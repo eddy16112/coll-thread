@@ -179,11 +179,8 @@ int collAlltoallv(const void* sendbuf,
 #endif
 }
 
-int collAlltoall(const void* sendbuf,
-                 void* recvbuf,
-                 int count,
-                 CollDataType type,
-                 CollComm global_comm)
+int collAlltoall(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm)
 {
   log_coll.print("Alltoall: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d",
                  global_comm->global_rank,
@@ -197,12 +194,8 @@ int collAlltoall(const void* sendbuf,
 #endif
 }
 
-int collGather(const void* sendbuf,
-               void* recvbuf,
-               int count,
-               CollDataType type,
-               int root,
-               CollComm global_comm)
+int collGather(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, int root, CollComm global_comm)
 {
   log_coll.print("Gather: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d",
                  global_comm->global_rank,
@@ -210,19 +203,15 @@ int collGather(const void* sendbuf,
                  global_comm->unique_id,
                  global_comm->global_comm_size);
 #if defined(LEGATE_USE_GASNET)
-  return gatherMPI(
-    sendbuf, recvbuf, count, type, root, global_comm);
+  return gatherMPI(sendbuf, recvbuf, count, type, root, global_comm);
 #else
   printf("Not implemented\n");
   assert(0);
 #endif
 }
 
-int collAllgather(const void* sendbuf,
-                  void* recvbuf,
-                  int count,
-                  CollDataType type,
-                  CollComm global_comm)
+int collAllgather(
+  const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm)
 {
   log_coll.print("Allgather: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d",
                  global_comm->global_rank,
@@ -232,8 +221,7 @@ int collAllgather(const void* sendbuf,
 #if defined(LEGATE_USE_GASNET)
   return allgatherMPI(sendbuf, recvbuf, count, type, global_comm);
 #else
-  return allgatherLocal(
-    sendbuf, recvbuf, count, type, global_comm);
+  return allgatherLocal(sendbuf, recvbuf, count, type, global_comm);
 #endif
 }
 
