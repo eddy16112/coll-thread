@@ -243,12 +243,10 @@ int collBcast(void* buf, int count, CollDataType type, int root, CollComm global
 // called from main thread
 int collInit(int argc, char* argv[])
 {
-  current_unique_id = 0;
+  current_unique_id    = 0;
   const char* nb_comms = getenv("LEGATE_MAX_COMMS");
-  if (nb_comms != nullptr) {
-    MAX_NB_COMMS = atoi(nb_comms);
-  }
-  assert (MAX_NB_COMMS > 0);
+  if (nb_comms != nullptr) { MAX_NB_COMMS = atoi(nb_comms); }
+  assert(MAX_NB_COMMS > 0);
 #ifdef LEGATE_USE_GASNET
   int provided, init_flag = 0;
   CHECK_MPI(MPI_Initialized(&init_flag));
