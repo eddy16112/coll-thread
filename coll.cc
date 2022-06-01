@@ -342,8 +342,8 @@ int generateAlltoallvTag(int rank1, int rank2, CollComm global_comm)
   int tag = (rank1 * 10000 + rank2) * CollTag::MAX_TAG + CollTag::ALLTOALLV_TAG;
 #else
   // still under testing, will be used once if 1 runs out of tags
-  int tag = (rank1 % global_comm->nb_threads * 10000 + rank2) * CollTag::MAX_TAG +
-             CollTag::ALLTOALLV_TAG;
+  int tag =
+    (rank1 % global_comm->nb_threads * 10000 + rank2) * CollTag::MAX_TAG + CollTag::ALLTOALLV_TAG;
 #endif
   assert(tag < INT_MAX && tag > 0);
   return tag;
