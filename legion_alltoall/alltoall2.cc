@@ -505,7 +505,7 @@ void alltoall_task(const Task *task,
 //                 (void*)recvbuf, 1, COLL_DTYPE,
 //                 global_comm);
 
-  coll::collAlltoall((void*)sendbuf, task_arg.sendcount, COLL_DTYPE, 
+  coll::collAlltoall((void*)sendbuf,
                 (void*)recvbuf, task_arg.sendcount, COLL_DTYPE,
                 global_comm);
 
