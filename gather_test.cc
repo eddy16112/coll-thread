@@ -48,7 +48,7 @@ void *thread_func(void *thread_args)
   global_comm.comm = args->comm;
 #endif
 
-  collGather(args->sendbuf, args->sendcount, args->sendtype, 
+  collGather(args->sendbuf,
              args->recvbuf, args->recvcount, args->recvtype,
              args->root, &global_comm);
   return NULL;
