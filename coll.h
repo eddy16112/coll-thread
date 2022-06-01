@@ -182,31 +182,26 @@ int collGenerateGatherTag(int rank, CollComm global_comm);
 #else
 size_t collGetDtypeSize(CollDataType dtype);
 
-int collAlltoallvLocal(const void* sendbuf,
-                       const int sendcounts[],
-                       const int sdispls[],
-                       CollDataType sendtype,
-                       void* recvbuf,
-                       const int recvcounts[],
-                       const int rdispls[],
-                       CollDataType recvtype,
-                       CollComm global_comm);
+int alltoallvLocal(const void* sendbuf,
+                   const int sendcounts[],
+                   const int sdispls[],
+                   void* recvbuf,
+                   const int recvcounts[],
+                   const int rdispls[],
+                   CollDataType type,
+                   CollComm global_comm);
 
-int collAlltoallLocal(const void* sendbuf,
-                      int sendcount,
-                      CollDataType sendtype,
-                      void* recvbuf,
-                      int recvcount,
-                      CollDataType recvtype,
-                      CollComm global_comm);
+int alltoallLocal(const void* sendbuf,
+                  void* recvbuf,
+                  int count,
+                  CollDataType type,
+                  CollComm global_comm);
 
-int collAllgatherLocal(const void* sendbuf,
-                       int sendcount,
-                       CollDataType sendtype,
-                       void* recvbuf,
-                       int recvcount,
-                       CollDataType recvtype,
-                       CollComm global_comm);
+int allgatherLocal(const void* sendbuf,
+                   void* recvbuf,
+                   int count,
+                   CollDataType type,
+                   CollComm global_comm);
 
 void collUpdateBuffer(CollComm global_comm);
 

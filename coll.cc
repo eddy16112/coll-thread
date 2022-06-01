@@ -175,8 +175,8 @@ int collAlltoallv(const void* sendbuf,
   return collAlltoallvMPI(
     sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, rdispls, recvtype, global_comm);
 #else
-  return collAlltoallvLocal(
-    sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, rdispls, recvtype, global_comm);
+  return alltoallvLocal(
+    sendbuf, sendcounts, sdispls, recvbuf, recvcounts, rdispls, recvtype, global_comm);
 #endif
 }
 
@@ -196,7 +196,7 @@ int collAlltoall(const void* sendbuf,
 #if defined(LEGATE_USE_GASNET)
   return collAlltoallMPI(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, global_comm);
 #else
-  return collAlltoallLocal(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, global_comm);
+  return alltoallLocal(sendbuf, recvbuf, recvcount, recvtype, global_comm);
 #endif
 }
 
@@ -239,8 +239,8 @@ int collAllgather(const void* sendbuf,
 #if defined(LEGATE_USE_GASNET)
   return collAllgatherMPI(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, global_comm);
 #else
-  return collAllgatherLocal(
-    sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, global_comm);
+  return allgatherLocal(
+    sendbuf, recvbuf, recvcount, recvtype, global_comm);
 #endif
 }
 
