@@ -53,7 +53,7 @@ void *thread_func(void *thread_args)
   collCommCreate(&global_comm, global_comm_size, global_rank, 0, NULL);
 #endif
 
-  collAlltoall(args->sendbuf, args->sendcount, args->sendtype, 
+  collAlltoall(args->sendbuf,
                args->recvbuf, args->recvcount, args->recvtype,
                &global_comm);
   collCommDestroy(&global_comm);

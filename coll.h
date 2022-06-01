@@ -91,19 +91,16 @@ int collCommDestroy(CollComm global_comm);
 int collAlltoallv(const void* sendbuf,
                   const int sendcounts[],
                   const int sdispls[],
-                  CollDataType sendtype,
                   void* recvbuf,
                   const int recvcounts[],
                   const int rdispls[],
-                  CollDataType recvtype,
+                  CollDataType type,
                   CollComm global_comm);
 
 int collAlltoall(const void* sendbuf,
-                 int sendcount,
-                 CollDataType sendtype,
                  void* recvbuf,
-                 int recvcount,
-                 CollDataType recvtype,
+                 int count,
+                 CollDataType type,
                  CollComm global_comm);
 
 int collGather(const void* sendbuf,
@@ -114,11 +111,9 @@ int collGather(const void* sendbuf,
                CollComm global_comm);
 
 int collAllgather(const void* sendbuf,
-                  int sendcount,
-                  CollDataType sendtype,
                   void* recvbuf,
-                  int recvcount,
-                  CollDataType recvtype,
+                  int count,
+                  CollDataType type,
                   CollComm global_comm);
 
 int collBcast(void* buf, int count, CollDataType type, int root, CollComm global_comm);

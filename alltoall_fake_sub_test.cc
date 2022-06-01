@@ -54,7 +54,7 @@ void *thread_func(void *thread_args)
     global_comm.comm = args->comm;
 #endif
 
-    collAlltoall(args->sendbuf, args->sendcount, args->sendtype, 
+    collAlltoall(args->sendbuf,
                  args->recvbuf, args->recvcount, args->recvtype,
                  &global_comm);
   }

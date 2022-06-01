@@ -56,7 +56,7 @@ void *thread_func(void *thread_args)
 #endif
 
   for (int i = 0; i < 10; i++) {
-  collAllgather(args->sendbuf, args->sendcount, args->sendtype, 
+  collAllgather(args->sendbuf,
                 args->recvbuf, args->recvcount, args->recvtype,
                 &global_comm);
   }

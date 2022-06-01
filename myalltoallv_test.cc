@@ -180,8 +180,8 @@ void *thread_func(void *thread_args)
             break;
     }
  
-    collAlltoallv(buffer_send, counts_send, displacements_send, collInt, 
-                  buffer_recv, counts_recv, displacements_recv, collInt, &global_comm);
+    collAlltoallv(buffer_send, counts_send, displacements_send, 
+                  buffer_recv, counts_recv, displacements_recv, CollDataType::CollInt, &global_comm);
     
     printf("Values received on process %d:", global_rank);
     for(int i = 0; i < buffer_recv_length; i++)
@@ -221,7 +221,7 @@ void *thread_func(void *thread_args)
         sdispls[i] = (i * (i+1))/2;
     }
     for (int i = 0; i< 5; i++) {
-        collAlltoallv( sbuf, sendcounts, sdispls, CollDataType::CollInt,
+        collAlltoallv( sbuf, sendcounts, sdispls,
                         rbuf, recvcounts, rdispls, CollDataType::CollInt, &global_comm );
         // if (global_comm.global_rank%2 == 0) sleep(3);
         printf("rank %d, iter %d\n", global_rank, i);

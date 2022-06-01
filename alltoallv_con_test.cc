@@ -75,7 +75,7 @@ void *thread_func(void *thread_args)
       sdispls[i] = i * seg_size;
     }
 
-    collAllgather(&seg_size, 1, CollDataType::CollInt, 
+    collAllgather(&seg_size,
                   recvcount, 1, CollDataType::CollInt, 
                   &global_comm);
     
@@ -118,7 +118,7 @@ void *thread_func(void *thread_args)
     // printf("\n");
     for (int i = 0; i < 1; i++) {
       collAlltoallv(sendbuf, sendcount,
-                    sdispls, COLL_DTYPE,
+                    sdispls,
                     recvbuf, recvcount,
                     rdispls, COLL_DTYPE, 
                     &global_comm);
@@ -193,7 +193,7 @@ void *thread_func(void *thread_args)
     //           &global_comm);
 
     collAlltoallv(sendbuf, sendcount,
-                  sdispls, COLL_DTYPE,
+                  sdispls,
                   recvbuf, recvcount,
                   rdispls, COLL_DTYPE, 
                   &global_comm);

@@ -66,7 +66,7 @@ void *thread_func(void *thread_args)
     rdispls[i] = i * SEND_COUNT;
   }
 
-  collAlltoallv(args->sendbuf, sendcount, sdispls, args->sendtype, 
+  collAlltoallv(args->sendbuf, sendcount, sdispls,
                args->recvbuf, recvcount, rdispls, args->recvtype,
                &global_comm);
   collCommDestroy(&global_comm);
