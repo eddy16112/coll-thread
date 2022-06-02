@@ -24,6 +24,7 @@ typedef struct thread_args_s {
   int nb_threads;
   int mpi_rank;
   int tid;
+  int uid;
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm comm;
 #endif
@@ -42,15 +43,16 @@ void *thread_func(void *thread_args)
   Coll_Comm global_comm;
   int global_rank = args->mpi_rank * args->nb_threads + args->tid;
   int global_comm_size = args->mpi_comm_size * args->nb_threads;
+  assert(args->uid == 0);
 
  #if defined (LEGATE_USE_GASNET)
   int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
   }
-  collCommCreate(&global_comm, global_comm_size, global_rank, 0, mapping_table);
+  collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, mapping_table);
 #else
-  collCommCreate(&global_comm, global_comm_size, global_rank, 0, NULL);
+  collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, NULL);
 #endif
 
   collAlltoall(args->sendbuf,
@@ -65,6 +67,7 @@ int main( int argc, char *argv[] )
   int mpi_rank = 0;
   int global_rank = 0;
   int mpi_comm_size = 1;
+  int uid = 111;
 
   // printf("pid %ld\n", getpid());
   // sleep(10);
@@ -80,6 +83,11 @@ int main( int argc, char *argv[] )
   MPI_Comm_dup(MPI_COMM_WORLD, &mpi_comm);
   MPI_Comm_rank(mpi_comm, &mpi_rank);
   MPI_Comm_size(mpi_comm, &mpi_comm_size);
+#endif
+
+  if (mpi_rank == 0) collGetUniqueId(&uid);
+#if defined (LEGATE_USE_GASNET)
+  MPI_Bcast(&uid, 1, MPI_INT, 0, MPI_COMM_WORLD);
 #endif
 
   size_t N = mpi_comm_size * SEND_COUNT * NTHREADS;
@@ -139,6 +147,7 @@ int main( int argc, char *argv[] )
     args[i].recvbuf = recv_buffs[i];
     args[i].recvcount = SEND_COUNT;
     args[i].recvtype = COLL_DTYPE;
+    args[i].uid = uid;
     pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
     //thread_func((void *)&(args[i]));
   }
@@ -195,6 +204,8 @@ int main( int argc, char *argv[] )
 
   free(send_buffs);
   free(recv_buffs);
+
+  if (mpi_rank == 0) collReleaseUniqueId(uid);
 
   rt.shutdown();
   rt.wait_for_shutdown();
