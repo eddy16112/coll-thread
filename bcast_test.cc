@@ -36,16 +36,16 @@ void *thread_func(void *thread_args)
   thread_args_t *args = (thread_args_t*)thread_args;
 
   Coll_Comm global_comm;
-  global_comm.mpi_comm_size = args->mpi_comm_size;
-  global_comm.mpi_rank = args->mpi_rank;
-  global_comm.global_rank = args->mpi_rank * args->nb_threads + args->tid;
-  global_comm.unique_id = 0;
+  int global_rank = args->mpi_rank * args->nb_threads + args->tid;
+  int global_comm_size = args->mpi_comm_size * args->nb_threads;
 
- #if defined (LEGATE_USE_GASNET)
-  global_comm.comm = args->comm;
-#endif
+  int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
+  for (int i = 0; i < global_comm_size; i++) {
+    mapping_table[i] = i / args->nb_threads;
+  }
+  collCommCreate(&global_comm, global_comm_size, global_rank, 0, mapping_table);
 
-  collBcast(args->buf, args->count, args->type, 
+  bcastMPI(args->buf, args->count, args->type, 
             args->root, &global_comm);
   return NULL;
 }
@@ -77,7 +77,7 @@ int main( int argc, char *argv[] )
   for (int i = 0; i < NTHREADS; i++) {
     a = (DTYPE *)malloc(N*sizeof(DTYPE));
  
-    printf("N %ld, rank=%d, tid %d, a=", N, mpi_rank, i);
+    // printf("N %ld, rank=%d, tid %d, a=", N, mpi_rank, i);
 
     global_rank = mpi_rank * NTHREADS + i;
     for(int j = 0; j < N; j++)
@@ -90,7 +90,7 @@ int main( int argc, char *argv[] )
       // printf(" %d", a[j]);		
     }
 
-    printf("\n");
+    // printf("\n");
  
     buffs[i] = a;
   }
@@ -134,12 +134,12 @@ int main( int argc, char *argv[] )
     global_rank = mpi_rank * NTHREADS + i;
 
     if (global_rank == root) {
-      printf("rank=%d, tid %d, b=", mpi_rank, i);
-      for(int j = 0; j < N; j++)
-      {
-        printf(" %d", (int)a[j]);		
-      }
-      printf("\n");
+      // printf("rank=%d, tid %d, b=", mpi_rank, i);
+      // for(int j = 0; j < N; j++)
+      // {
+      //   printf(" %d", (int)a[j]);		
+      // }
+      // printf("\n");
 
       for (int x = 0; x < N; x ++) {
         if (a[x] != (DTYPE)x) {
