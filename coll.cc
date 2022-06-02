@@ -19,9 +19,9 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <atomic>
 #include <cstdlib>
-#include <unistd.h>
 #include <mutex>
 
 #ifndef LEGATE_USE_GASNET
@@ -273,12 +273,12 @@ int collGetUniqueId(int* id)
   // *id = current_unique_id;
   // current_unique_id++;
   // assert(current_unique_id <= MAX_NB_COMMS);
-  //comm_pool.lock.lock();
+  // comm_pool.lock.lock();
   comm_pool.pid = getpid();
   for (int i = 0; i < MAX_NB_COMMS; i++) {
     if (comm_pool.status[i] == true) {
       comm_pool.status[i] = false;
-      *id = i;
+      *id                 = i;
       return CollSuccess;
     }
   }
