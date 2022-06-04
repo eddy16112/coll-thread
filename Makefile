@@ -47,7 +47,7 @@ SO_FLAGS += -shared
 endif
 
 ifeq ($(strip $(DEBUG)),1)
-	CC_FLAGS	+= -g -O0
+	CC_FLAGS	+= -g -O0 -DDEBUG_LEGATE
 else
 	CC_FLAGS	+= -O2
 endif
@@ -90,7 +90,12 @@ COLL_TEST_OBJS	:= $(COLL_TEST_SRC:.cc=.cc.o)
 
 .PHONY: build clean
 
+ifeq ($(strip $(COLL_NETWORKS)),mpi)
 OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test
+else
+OUTFILE := alltoall_test allgather_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test
+endif
+
 
 build: $(OUTFILE)
 
