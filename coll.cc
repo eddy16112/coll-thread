@@ -260,7 +260,10 @@ int collGetUniqueId(int* id)
   *id = current_unique_id;
   current_unique_id++;
   if (current_unique_id > MAX_NB_COMMS) {
-    log_coll.fatal("Please increase the LEGATE_MAX_COMMS by export LEGATE_MAX_COMMS=new number, current value is %d\n", MAX_NB_COMMS);
+    log_coll.fatal(
+      "Please increase the LEGATE_MAX_COMMS by export LEGATE_MAX_COMMS=new number, current value "
+      "is %d\n",
+      MAX_NB_COMMS);
     assert(0);
   }
   return CollSuccess;
@@ -270,7 +273,7 @@ int collGetUniqueId(int* id)
 MPI_Datatype dtypeToMPIDtype(CollDataType dtype)
 {
   switch (dtype) {
-    case CollDataType::CollInt8: { 
+    case CollDataType::CollInt8: {
       return MPI_INT8_T;
     }
     case CollDataType::CollChar: {
