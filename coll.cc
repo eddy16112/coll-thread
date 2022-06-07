@@ -265,7 +265,8 @@ int collGetUniqueId(int* id)
   current_unique_id++;
   if (current_unique_id > MAX_NB_COMMS) {
     log_coll.fatal(
-      "Please increase the LEGATE_MAX_CPU_COMMS by export LEGATE_MAX_CPU_COMMS=new number, current value "
+      "Please increase the LEGATE_MAX_CPU_COMMS by export LEGATE_MAX_CPU_COMMS=new number, current "
+      "value "
       "is %d\n",
       MAX_NB_COMMS);
   }
