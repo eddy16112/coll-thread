@@ -165,6 +165,11 @@ int collAlltoallv(const void* sendbuf,
                   CollDataType type,
                   CollComm global_comm)
 {
+  // IN_PLACE
+  if (sendbuf == recvbuf) {
+    log_coll.fatal("Do not support inplace Alltoallv");
+    assert(0);
+  }
   log_coll.debug("Alltoallv: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d",
                  global_comm->global_rank,
                  global_comm->mpi_rank,
@@ -182,6 +187,11 @@ int collAlltoallv(const void* sendbuf,
 int collAlltoall(
   const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm)
 {
+  // IN_PLACE
+  if (sendbuf == recvbuf) {
+    log_coll.fatal("Do not support inplace Alltoall");
+    assert(0);
+  }
   log_coll.debug("Alltoall: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d",
                  global_comm->global_rank,
                  global_comm->mpi_rank,
@@ -302,6 +312,7 @@ MPI_Datatype dtypeToMPIDtype(CollDataType dtype)
     }
     default: {
       log_coll.fatal("Unknown datatype");
+      assert(0);
       return MPI_BYTE;
     }
   }
@@ -399,6 +410,7 @@ size_t getDtypeSize(CollDataType dtype)
     }
     default: {
       log_coll.fatal("Unknown datatype");
+      assert(0);
       return 0;
     }
   }
