@@ -291,9 +291,7 @@ int collFinalize(void)
   mpi_comms.clear();
   int fina_flag = 0;
   CHECK_MPI(MPI_Finalized(&fina_flag));
-  if (fina_flag == 0) {
-    CHECK_MPI(MPI_Finalize());
-  }
+  if (fina_flag == 0) { CHECK_MPI(MPI_Finalize()); }
   return CollSuccess;
 #else
   for (int i = 0; i < MAX_NB_COMMS; i++) { assert(thread_comms[i].ready_flag == false); }
