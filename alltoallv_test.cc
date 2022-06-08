@@ -61,6 +61,8 @@ void *thread_func(void *thread_args)
   collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, NULL);
 #endif
 
+  assert(global_comm.mpi_comm_size == global_comm.mpi_comm_size_actual);
+
 #if 0
   int total_size = 0;
   for (int i = 0; i < global_comm_size; i++) {

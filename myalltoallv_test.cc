@@ -46,6 +46,7 @@ void *thread_func(void *thread_args)
 #else
   collCommCreate(&global_comm, global_comm_size, global_rank, 0, NULL);
 #endif
+  assert(global_comm.mpi_comm_size == global_comm.mpi_comm_size_actual);
 
 #if 0
     // Define the buffer containing the values to send

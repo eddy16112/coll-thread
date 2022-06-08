@@ -48,6 +48,7 @@ void *thread_func(void *thread_args)
 #else
   collCommCreate(&global_comm, global_comm_size, global_rank, args->group_id, NULL);
 #endif
+  assert(global_comm.mpi_comm_size == global_comm.mpi_comm_size_actual);
 
   if (global_comm.unique_id %2 == 0) {
     //sleep(5);

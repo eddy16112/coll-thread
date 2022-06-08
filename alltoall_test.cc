@@ -52,6 +52,7 @@ void *thread_func(void *thread_args)
 #else
   collCommCreate(&global_comm, global_comm_size, global_rank, 0, NULL);
 #endif
+  assert(global_comm.mpi_comm_size == global_comm.mpi_comm_size_actual);
 
   collAlltoall(args->sendbuf,
                args->recvbuf, args->recvcount, args->recvtype,
