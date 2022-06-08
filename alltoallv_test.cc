@@ -230,7 +230,11 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
+  MPI_Init(0, NULL);
+
   collInit(0, NULL);
+
+  printf("done with init\n");
 
   Runtime rt;
 
