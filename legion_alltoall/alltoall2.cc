@@ -625,6 +625,11 @@ int main(int argc, char **argv)
 {
   Runtime::set_top_level_task_id(TOP_LEVEL_TASK_ID);
 
+#if defined (LEGATE_USE_GASNET)
+  int provided;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+#endif
+
   coll::collInit(0, NULL);
 
   {
@@ -686,5 +691,9 @@ int main(int argc, char **argv)
 
   int val = Runtime::start(argc, argv);
   coll::collFinalize();
+
+#if defined (LEGATE_USE_GASNET)
+  MPI_Finalize();
+#endif
   return val;
 }
