@@ -230,7 +230,10 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
-  // MPI_Init(0, NULL);
+#if defined (LEGATE_USE_GASNET)
+  int provided;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+#endif
 
   collInit(0, NULL);
 
@@ -291,5 +294,9 @@ int main( int argc, char *argv[] )
   }
 
   collFinalize();
+
+#if defined (LEGATE_USE_GASNET)
+  MPI_Finalize();
+#endif
   return 0;
 }

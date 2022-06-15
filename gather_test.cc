@@ -60,6 +60,11 @@ int main( int argc, char *argv[] )
   int global_rank = 0;
   int mpi_comm_size = 1;
 
+#if defined (LEGATE_USE_GASNET)
+  int provided;
+  MPI_Init_thread(&argc, &argv, MPI_THREAD_MULTIPLE, &provided);
+#endif
+
   collInit(argc, argv);
   
 #if defined (LEGATE_USE_GASNET)
@@ -167,6 +172,10 @@ int main( int argc, char *argv[] )
   free(recv_buffs);
  
   collFinalize();
+
+#if defined (LEGATE_USE_GASNET)
+  MPI_Finalize();
+#endif
 
   return 0;
 }
