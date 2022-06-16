@@ -12,7 +12,7 @@ LD_FLAGS	?= -lpthread
 INC_FLAGS	?=
 SO_FLAGS	?=
 SHARED_OBJECTS ?= 1
-COLL_LIBS := -L. -lcoll -lpthread
+COLL_LIBS := -Wl,-rpath . -L. -lcoll -lpthread
 
 # CUDA_DIR = /usr/local/cuda-11.1
 # GASNET_DIR=/scratch2/wwu/install/gasnet
