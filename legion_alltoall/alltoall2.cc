@@ -261,6 +261,9 @@ void top_level_task(const Task *task,
 
   TaskLauncher init_unique_id_launcher(INIT_UID_TASK_ID, TaskArgument(NULL, 0));
   Future unique_id_future = runtime->execute_task(ctx, init_unique_id_launcher);
+  unique_id_future.wait();
+  int uid = unique_id_future.get_result<int>();
+  coll::collInitComm(uid);
 
   IndexLauncher init_mapping_launcher(INIT_MAPPING_TASK_ID, color_is, 
                                       TaskArgument(NULL, 0), arg_map);
@@ -393,7 +396,7 @@ int init_uid_task(const Task *task,
 {
   int unique_id = 0;
   coll::collGetUniqueId(&unique_id);
-  unique_id ++;
+  //unique_id ++;
   return unique_id;
 }
 
@@ -430,7 +433,7 @@ coll::Coll_Comm* init_comm_cpu_task(const Task *task,
   int global_comm_size = task->index_domain.get_volume();
   assert(task->futures.size() == (static_cast<size_t>(global_comm_size) + 1));
   const int unique_id = task->futures[0].get_result<int>();;
-  assert(unique_id == 1);
+  assert(unique_id == 0);
  #if defined (LEGATE_USE_GASNET)
   int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
   for (int i = 0; i < global_comm_size; i++) {
