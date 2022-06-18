@@ -53,7 +53,10 @@ void *thread_func(void *thread_args)
 #else
   collCommCreate(&global_comm, global_comm_size, global_rank, group_id, NULL);
 #endif
+
+#if defined (LEGATE_USE_GASNET)
   assert(global_comm.mpi_comm_size == global_comm.mpi_comm_size_actual * NB_GROUPS);
+#endif
 
   if (global_comm.unique_id %2 == 0) {
    // sleep(5);
@@ -295,6 +298,10 @@ int main( int argc, char *argv[] )
  #if defined (LEGATE_USE_GASNET)
   MPI_Barrier(mpi_comm);
 #endif
+
+  for (int i = 0; i < NB_GROUPS; i++) {
+    collInitComm(i);
+  }
 
 
   pthread_t thread_id[NTHREADS];

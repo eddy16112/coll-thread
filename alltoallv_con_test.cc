@@ -297,6 +297,7 @@ int main( int argc, char *argv[] )
   int group_id[NB_GROUPS];
   for (int i = 0; i < NB_GROUPS; i++) {
     collGetUniqueId(&(group_id[i]));
+    collInitComm(group_id[i]);
     //assert(group_id[i] == i);
   }
 

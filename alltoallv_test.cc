@@ -254,6 +254,8 @@ int main( int argc, char *argv[] )
   MPI_Barrier(mpi_comm);
 #endif
 
+  collInitComm(0);
+
   pthread_t thread_id1[NTHREADS];
   thread_args_t args1[NTHREADS];
 
@@ -273,6 +275,8 @@ int main( int argc, char *argv[] )
   for(int i = 0; i < NTHREADS; i++) {
       pthread_join( thread_id1[i], NULL); 
   }
+
+  collInitComm(1);
 
   pthread_t thread_id2[NTHREADS*2];
   thread_args_t args2[NTHREADS*2];

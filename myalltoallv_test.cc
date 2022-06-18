@@ -27,6 +27,7 @@ typedef struct thread_args_s {
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm comm;
 #endif
+  int uid;
 } thread_args_t;
 
 void *thread_func(void *thread_args)
@@ -42,9 +43,9 @@ void *thread_func(void *thread_args)
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
   }
-  collCommCreate(&global_comm, global_comm_size, global_rank, 0, mapping_table);
+  collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, mapping_table);
 #else
-  collCommCreate(&global_comm, global_comm_size, global_rank, 0, NULL);
+  collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, NULL);
 #endif
   assert(global_comm.mpi_comm_size == global_comm.mpi_comm_size_actual);
 
@@ -282,6 +283,8 @@ int main( int argc, char *argv[] )
   MPI_Barrier(mpi_comm);
 #endif
 
+  collInitComm(0);
+
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
 
@@ -293,6 +296,7 @@ int main( int argc, char *argv[] )
  #if defined (LEGATE_USE_GASNET)
     args[i].comm = mpi_comm;
   #endif
+    args[i].uid = 0;
     pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
     //thread_func((void *)&(args[i]));
   }
