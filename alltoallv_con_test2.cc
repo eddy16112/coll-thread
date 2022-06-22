@@ -299,8 +299,9 @@ int main( int argc, char *argv[] )
   MPI_Barrier(mpi_comm);
 #endif
 
+  int uid;
   for (int i = 0; i < NB_GROUPS; i++) {
-    collInitComm(i);
+    uid = collInitComm();
   }
 
 

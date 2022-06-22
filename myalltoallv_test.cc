@@ -283,7 +283,7 @@ int main( int argc, char *argv[] )
   MPI_Barrier(mpi_comm);
 #endif
 
-  collInitComm(0);
+  int uid = collInitComm();
 
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
@@ -296,7 +296,7 @@ int main( int argc, char *argv[] )
  #if defined (LEGATE_USE_GASNET)
     args[i].comm = mpi_comm;
   #endif
-    args[i].uid = 0;
+    args[i].uid = uid;
     pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
     //thread_func((void *)&(args[i]));
   }

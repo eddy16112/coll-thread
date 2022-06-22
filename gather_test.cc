@@ -107,7 +107,7 @@ int main( int argc, char *argv[] )
   MPI_Barrier(mpi_comm);
 #endif
 
-  collInitComm(0);
+  int uid = collInitComm();
 
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
@@ -131,7 +131,7 @@ int main( int argc, char *argv[] )
     args[i].recvcount = SEND_COUNT;
     args[i].recvtype = COLL_DTYPE;
     args[i].root = root;
-    args[i].uid = 0;
+    args[i].uid = uid;
     pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
     //thread_func((void *)&(args[i]));
   }

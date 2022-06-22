@@ -50,9 +50,9 @@ enum CollTag : int {
 
 static int mpi_tag_ub = 0;
 
-static std::vector<MPI_Comm> mpi_comms(0);
+static std::vector<MPI_Comm> mpi_comms;
 #else  // undef LEGATE_USE_GASNET
-static std::vector<ThreadComm> thread_comms(0);
+static std::vector<ThreadComm> thread_comms;
 #endif
 
 static int current_unique_id = 0;
@@ -264,9 +264,9 @@ int collInit(int argc, char* argv[])
   CHECK_MPI(MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &tag_ub, &flag));
   assert(flag);
   mpi_tag_ub = *tag_ub;
-  mpi_comms.clear();
+  assert(mpi_comms.empty() == true);
 #else
-  thread_comms.clear();
+  assert(thread_comms.empty() == true);
 #endif
   coll_inited = true;
   return CollSuccess;
@@ -277,7 +277,7 @@ int collFinalize(void)
   assert(coll_inited == true);
   coll_inited = false;
 #ifdef LEGATE_USE_GASNET
-  for (int i = 0; i < mpi_comms.size(); i++) { CHECK_MPI(MPI_Comm_free(&mpi_comms[i])); }
+  for (MPI_Comm& mpi_comm : mpi_comms) { CHECK_MPI(MPI_Comm_free(&mpi_comm)); }
   mpi_comms.clear();
   int fina_flag = 0;
   CHECK_MPI(MPI_Finalized(&fina_flag));
@@ -286,7 +286,7 @@ int collFinalize(void)
     LEGATE_ABORT;
   }
 #else
-  for (int i = 0; i < thread_comms.size(); i++) { assert(thread_comms[i].ready_flag == false); }
+  for (ThreadComm& thread_comm : thread_comms) { assert(thread_comm.ready_flag == false); }
   thread_comms.clear();
 #endif
   return CollSuccess;
@@ -299,10 +299,18 @@ int collGetUniqueId(int* id)
   return CollSuccess;
 }
 
-int collInitComm(int id)
+int collInitComm(void)
 {
-  log_coll.debug("Init comm id %d", id);
+  int id = 0;
+  collGetUniqueId(&id);
 #ifdef LEGATE_USE_GASNET
+#ifdef DEBUG_LEGATE
+  int mpi_rank;
+  int send_id = id;
+  // check if all ranks get the same unique id
+  CHECK_MPI(MPI_Bcast(&send_id, 1, MPI_INT, 0, MPI_COMM_WORLD));
+  assert(send_id == id);
+#endif
   assert(mpi_comms.size() == id);
   // create mpi comm
   MPI_Comm mpi_comm;
@@ -317,7 +325,8 @@ int collInitComm(int id)
   thread_comm.displs     = nullptr;
   thread_comms.push_back(thread_comm);
 #endif
-  return CollSuccess;
+  log_coll.debug("Init comm id %d", id);
+  return id;
 }
 
 #ifdef LEGATE_USE_GASNET
@@ -506,5 +515,5 @@ extern "C" {
 
 void legate_cpucoll_finalize(void) { legate::comm::coll::collFinalize(); }
 
-void legate_cpucoll_initcomm(int id) { legate::comm::coll::collInitComm(id); }
+int legate_cpucoll_initcomm(void) { return legate::comm::coll::collInitComm(); }
 }

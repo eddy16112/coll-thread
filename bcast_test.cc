@@ -109,7 +109,7 @@ int main( int argc, char *argv[] )
   struct timeval tv;
   gettimeofday(&tv,NULL);
   unsigned long start_time = 1000000 * tv.tv_sec + tv.tv_usec;
-  collInitComm(0);
+  int uid = collInitComm();
   gettimeofday(&tv,NULL);
   unsigned long end_time = 1000000 * tv.tv_sec + tv.tv_usec;
   printf("time %ld\n", end_time-start_time);
@@ -131,7 +131,7 @@ int main( int argc, char *argv[] )
     args[i].count = SEND_COUNT;
     args[i].type = COLL_DTYPE;
     args[i].root = root;
-    args[i].uid = 0;
+    args[i].uid = uid;
     pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
     //thread_func((void *)&(args[i]));
   }
