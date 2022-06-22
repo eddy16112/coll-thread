@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <pthread.h>
+ #include <sys/time.h>
 
 #include "coll.h"
 
@@ -105,7 +106,13 @@ int main( int argc, char *argv[] )
   MPI_Barrier(mpi_comm);
 #endif
 
+  struct timeval tv;
+  gettimeofday(&tv,NULL);
+  unsigned long start_time = 1000000 * tv.tv_sec + tv.tv_usec;
   collInitComm(0);
+  gettimeofday(&tv,NULL);
+  unsigned long end_time = 1000000 * tv.tv_sec + tv.tv_usec;
+  printf("time %ld\n", end_time-start_time);
 
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
