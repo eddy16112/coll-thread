@@ -259,11 +259,12 @@ void top_level_task(const Task *task,
     runtime->execute_index_space(ctx, init_launcher);
   }
 
-  TaskLauncher init_unique_id_launcher(INIT_UID_TASK_ID, TaskArgument(NULL, 0));
-  Future unique_id_future = runtime->execute_task(ctx, init_unique_id_launcher);
-  unique_id_future.wait();
-  int uid = unique_id_future.get_result<int>();
-  coll::collInitComm(uid);
+  // TaskLauncher init_unique_id_launcher(INIT_UID_TASK_ID, TaskArgument(NULL, 0));
+  // Future unique_id_future = runtime->execute_task(ctx, init_unique_id_launcher);
+  // unique_id_future.wait();
+  // int uid = unique_id_future.get_result<int>();
+  int uid = coll::collInitComm();
+  Future unique_id_future = Future::from_value<int>(runtime, uid);
 
   IndexLauncher init_mapping_launcher(INIT_MAPPING_TASK_ID, color_is, 
                                       TaskArgument(NULL, 0), arg_map);
