@@ -35,6 +35,7 @@ typedef struct thread_args_s {
   void *recvbuf;
   int recvcount;
   CollDataType recvtype;
+  int uid;
 } thread_args_t;
 
 void *thread_func(void *thread_args)
@@ -50,9 +51,9 @@ void *thread_func(void *thread_args)
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
   }
-  collCommCreate(&global_comm, global_comm_size, global_rank, 0, mapping_table);
+  collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, mapping_table);
 #else
-  collCommCreate(&global_comm, global_comm_size, global_rank, 0, NULL);
+  collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, NULL);
 #endif
 
   for (int i = 0; i < 10; i++) {
@@ -122,6 +123,7 @@ int main( int argc, char *argv[] )
  #if defined (LEGATE_USE_GASNET)
   MPI_Barrier(mpi_comm);
 #endif
+  int uid = collInitComm();
 
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
@@ -142,6 +144,7 @@ int main( int argc, char *argv[] )
     args[i].recvbuf = recv_buffs[i];
     args[i].recvcount = SEND_COUNT;
     args[i].recvtype = COLL_DTYPE;
+    args[i].uid = uid;
     pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
     //thread_func((void *)&(args[i]));
   }

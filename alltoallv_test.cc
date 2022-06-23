@@ -254,6 +254,9 @@ int main( int argc, char *argv[] )
   MPI_Barrier(mpi_comm);
 #endif
 
+  int uid = collInitComm();
+  assert(uid == 0);
+
   pthread_t thread_id1[NTHREADS];
   thread_args_t args1[NTHREADS];
 
@@ -262,7 +265,7 @@ int main( int argc, char *argv[] )
     args1[i].mpi_comm_size = mpi_comm_size;
     args1[i].tid = i;
     args1[i].nb_threads = NTHREADS;
-    args1[i].uid = 0;
+    args1[i].uid = uid;
  #if defined (LEGATE_USE_GASNET)
     args1[i].comm = mpi_comm;
   #endif
@@ -274,6 +277,9 @@ int main( int argc, char *argv[] )
       pthread_join( thread_id1[i], NULL); 
   }
 
+  uid = collInitComm();
+  assert(uid == 1);
+
   pthread_t thread_id2[NTHREADS*2];
   thread_args_t args2[NTHREADS*2];
   for (int i = 0; i < NTHREADS*2; i++) {
@@ -281,7 +287,7 @@ int main( int argc, char *argv[] )
     args2[i].mpi_comm_size = mpi_comm_size;
     args2[i].tid = i;
     args2[i].nb_threads = NTHREADS*2;
-    args2[i].uid = 1;
+    args2[i].uid = uid;
  #if defined (LEGATE_USE_GASNET)
     args2[i].comm = mpi_comm;
   #endif

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <pthread.h>
+ #include <sys/time.h>
 
 #include "coll.h"
 
@@ -29,6 +30,7 @@ typedef struct thread_args_s {
   int count; 
   CollDataType type;
   int root;
+  int uid;
 } thread_args_t;
 
 void *thread_func(void *thread_args)
@@ -43,7 +45,7 @@ void *thread_func(void *thread_args)
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
   }
-  collCommCreate(&global_comm, global_comm_size, global_rank, 0, mapping_table);
+  collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, mapping_table);
 
   bcastMPI(args->buf, args->count, args->type, 
             args->root, &global_comm);
@@ -104,6 +106,14 @@ int main( int argc, char *argv[] )
   MPI_Barrier(mpi_comm);
 #endif
 
+  struct timeval tv;
+  gettimeofday(&tv,NULL);
+  unsigned long start_time = 1000000 * tv.tv_sec + tv.tv_usec;
+  int uid = collInitComm();
+  gettimeofday(&tv,NULL);
+  unsigned long end_time = 1000000 * tv.tv_sec + tv.tv_usec;
+  printf("time %ld\n", end_time-start_time);
+
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
 
@@ -121,6 +131,7 @@ int main( int argc, char *argv[] )
     args[i].count = SEND_COUNT;
     args[i].type = COLL_DTYPE;
     args[i].root = root;
+    args[i].uid = uid;
     pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
     //thread_func((void *)&(args[i]));
   }
