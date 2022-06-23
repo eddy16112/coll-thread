@@ -264,15 +264,15 @@ int collInit(int argc, char* argv[])
   CHECK_MPI(MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &tag_ub, &flag));
   assert(flag);
   mpi_tag_ub = *tag_ub;
-  assert(mpi_comms.empty() == true);
+  assert(mpi_comms.empty());
 #else
-  assert(thread_comms.empty() == true);
+  assert(thread_comms.empty());
 #endif
   coll_inited = true;
   return CollSuccess;
 }
 
-int collFinalize(void)
+int collFinalize()
 {
   assert(coll_inited == true);
   coll_inited = false;
@@ -286,7 +286,7 @@ int collFinalize(void)
     LEGATE_ABORT;
   }
 #else
-  for (ThreadComm& thread_comm : thread_comms) { assert(thread_comm.ready_flag == false); }
+  for (ThreadComm& thread_comm : thread_comms) { assert(!thread_comm.ready_flag); }
   thread_comms.clear();
 #endif
   return CollSuccess;
@@ -299,7 +299,7 @@ int collGetUniqueId(int* id)
   return CollSuccess;
 }
 
-int collInitComm(void)
+int collInitComm()
 {
   int id = 0;
   collGetUniqueId(&id);
