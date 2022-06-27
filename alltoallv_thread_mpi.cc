@@ -83,18 +83,35 @@ int alltoallvMPI(const void* sendbuf,
       recv_tag,
       rcount);
 #endif
-    CHECK_MPI(MPI_Sendrecv(src,
-                           scount,
-                           mpi_type,
-                           sendto_mpi_rank,
-                           send_tag,
-                           dst,
-                           rcount,
-                           mpi_type,
-                           recvfrom_mpi_rank,
-                           recv_tag,
-                           global_comm->comm,
-                           &status));
+    if (scount == 0 && rcount != 0) {
+      CHECK_MPI(MPI_Recv(dst,
+                         rcount,
+                         mpi_type,
+                         recvfrom_mpi_rank,
+                         recv_tag,
+                         global_comm->comm,
+                         &status));
+    } else if (scount != 0 && rcount == 0) {
+      CHECK_MPI(MPI_Send(src,
+                         scount,
+                         mpi_type,
+                         sendto_mpi_rank,
+                         send_tag,
+                         global_comm->comm));
+    } else if (scount != 0 && rcount != 0) {
+      CHECK_MPI(MPI_Sendrecv(src,
+                            scount,
+                            mpi_type,
+                            sendto_mpi_rank,
+                            send_tag,
+                            dst,
+                            rcount,
+                            mpi_type,
+                            recvfrom_mpi_rank,
+                            recv_tag,
+                            global_comm->comm,
+                            &status));
+    }
   }
 
   return CollSuccess;

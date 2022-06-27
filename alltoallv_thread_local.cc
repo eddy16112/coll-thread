@@ -82,7 +82,9 @@ int alltoallvLocal(const void* sendbuf,
       rdispls[recvfrom_global_rank],
       dst);
 #endif
-    memcpy(dst, src, recvcounts[recvfrom_global_rank] * type_extent);
+    if (recvcounts[recvfrom_global_rank] != 0) {
+      memcpy(dst, src, recvcounts[recvfrom_global_rank] * type_extent);
+    }
   }
 
   barrierLocal(global_comm);
