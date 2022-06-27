@@ -58,7 +58,7 @@ struct ThreadComm {
   bool ready_flag;
   const void** buffers;
   const int** displs;
-  int* buffer_ready; // use for p2p with size = comm_size*comm_size
+  int* buffer_ready;  // use for p2p with size = comm_size*comm_size
 };
 #endif
 
@@ -122,10 +122,10 @@ int collAllgather(
   const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm);
 
 int collSend(
-  const void *sendbuf, int count, CollDataType type, int dest, int tag, CollComm global_comm);
+  const void* sendbuf, int count, CollDataType type, int dest, int tag, CollComm global_comm);
 
 int collRecv(
-  void *recvbuf, int count, CollDataType type, int source, int tag, CollComm global_comm);
+  void* recvbuf, int count, CollDataType type, int source, int tag, CollComm global_comm);
 
 int collInit(int argc, char* argv[]);
 
@@ -158,10 +158,9 @@ int allgatherMPI(
 int bcastMPI(void* buf, int count, CollDataType type, int root, CollComm global_comm);
 
 int sendMPI(
-  const void *sendbuf, int count, CollDataType type, int dest, int tag, CollComm global_comm);
+  const void* sendbuf, int count, CollDataType type, int dest, int tag, CollComm global_comm);
 
-int recvMPI(
-  void *recvbuf, int count, CollDataType type, int source, int tag, CollComm global_comm);
+int recvMPI(void* recvbuf, int count, CollDataType type, int source, int tag, CollComm global_comm);
 
 MPI_Datatype dtypeToMPIDtype(CollDataType dtype);
 
@@ -193,10 +192,10 @@ int allgatherLocal(
   const void* sendbuf, void* recvbuf, int count, CollDataType type, CollComm global_comm);
 
 int sendLocal(
-  const void *sendbuf, int count, CollDataType type, int dest, int tag, CollComm global_comm);
+  const void* sendbuf, int count, CollDataType type, int dest, int tag, CollComm global_comm);
 
 int recvLocal(
-  void *recvbuf, int count, CollDataType type, int source, int tag, CollComm global_comm);
+  void* recvbuf, int count, CollDataType type, int source, int tag, CollComm global_comm);
 
 void resetLocalBuffer(CollComm global_comm);
 

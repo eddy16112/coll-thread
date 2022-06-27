@@ -36,21 +36,17 @@ enum P2PTag : int {
   SEND_BUFFER_RELEASE = 3,
 };
 
-int sendLocal(const void *sendbuf, 
-              int count, 
-              CollDataType type, 
-              int dest, 
-              int tag, 
-              CollComm global_comm)
+int sendLocal(
+  const void* sendbuf, int count, CollDataType type, int dest, int tag, CollComm global_comm)
 {
   int total_size  = global_comm->global_comm_size;
   int global_rank = global_comm->global_rank;
 
   int type_extent = getDtypeSize(type);
 
-  int key = global_rank * total_size + dest;
+  int key                                 = global_rank * total_size + dest;
   global_comm->comm->buffers[global_rank] = sendbuf;
-  global_comm->comm->buffer_ready[key] = P2PTag::SEND_BUFFER_READY;
+  global_comm->comm->buffer_ready[key]    = P2PTag::SEND_BUFFER_READY;
   __sync_synchronize();
 
   // wait for dest to copy
@@ -70,12 +66,8 @@ int sendLocal(const void *sendbuf,
   return CollSuccess;
 }
 
-int recvLocal(void *recvbuf, 
-              int count, 
-              CollDataType type, 
-              int source, 
-              int tag, 
-              CollComm global_comm)
+int recvLocal(
+  void* recvbuf, int count, CollDataType type, int source, int tag, CollComm global_comm)
 {
   int total_size  = global_comm->global_comm_size;
   int global_rank = global_comm->global_rank;
@@ -85,7 +77,7 @@ int recvLocal(void *recvbuf,
   // wait for source to put the buffer
   int key = source * total_size + global_rank;
   while (global_comm->comm->buffer_ready[key] == P2PTag::INIT ||
-          global_comm->comm->buffers[source] == nullptr)
+         global_comm->comm->buffers[source] == nullptr)
     ;
   __sync_synchronize();
 
@@ -96,7 +88,7 @@ int recvLocal(void *recvbuf,
 
   // while for source to reset the buffer
   while (global_comm->comm->buffer_ready[key] != P2PTag::SEND_BUFFER_RELEASE ||
-          global_comm->comm->buffers[source] != nullptr)
+         global_comm->comm->buffers[source] != nullptr)
     ;
   __sync_synchronize();
 

@@ -110,7 +110,7 @@ int collCommCreate(CollComm global_comm,
       (const void**)malloc(sizeof(void*) * global_comm_size);
     thread_comms[global_comm->unique_id].displs =
       (const int**)malloc(sizeof(int*) * global_comm_size);
-    thread_comms[global_comm->unique_id].buffer_ready=
+    thread_comms[global_comm->unique_id].buffer_ready =
       (int*)malloc(sizeof(int*) * global_comm_size * global_comm_size);
     for (int i = 0; i < global_comm_size; i++) {
       thread_comms[global_comm->unique_id].buffers[i] = nullptr;
@@ -247,7 +247,7 @@ int collAllgather(
 }
 
 int collSend(
-  const void *sendbuf, int count, CollDataType type, int dest, int tag, CollComm global_comm)
+  const void* sendbuf, int count, CollDataType type, int dest, int tag, CollComm global_comm)
 {
   log_coll.debug(
     "Send: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d, "
@@ -259,7 +259,8 @@ int collSend(
     global_comm->mpi_comm_size,
     global_comm->mpi_comm_size_actual,
     global_comm->nb_threads,
-    dest, tag);
+    dest,
+    tag);
 #ifdef LEGATE_USE_GASNET
   return sendMPI(sendbuf, count, type, dest, tag, global_comm);
 #else
@@ -267,8 +268,7 @@ int collSend(
 #endif
 }
 
-int collRecv(
-  void *recvbuf, int count, CollDataType type, int source, int tag, CollComm global_comm)
+int collRecv(void* recvbuf, int count, CollDataType type, int source, int tag, CollComm global_comm)
 {
   log_coll.debug(
     "Recv: global_rank %d, mpi_rank %d, unique_id %d, comm_size %d, "
@@ -280,7 +280,8 @@ int collRecv(
     global_comm->mpi_comm_size,
     global_comm->mpi_comm_size_actual,
     global_comm->nb_threads,
-    source, tag);
+    source,
+    tag);
 #ifdef LEGATE_USE_GASNET
   return recvMPI(recvbuf, count, type, source, tag, global_comm);
 #else
@@ -545,9 +546,9 @@ size_t getDtypeSize(CollDataType dtype)
 
 void resetLocalBuffer(CollComm global_comm)
 {
-  int global_rank                               = global_comm->global_rank;
-  global_comm->comm->buffers[global_rank]       = nullptr;
-  global_comm->comm->displs[global_rank]        = nullptr;
+  int global_rank                         = global_comm->global_rank;
+  global_comm->comm->buffers[global_rank] = nullptr;
+  global_comm->comm->displs[global_rank]  = nullptr;
 }
 
 void barrierLocal(CollComm global_comm)

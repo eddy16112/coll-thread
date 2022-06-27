@@ -70,7 +70,7 @@ int alltoallvMPI(const void* sendbuf,
     log_coll.debug(
       "AlltoallvMPI i: %d === global_rank %d, mpi rank %d, "
       "send to %d (%d), send_tag %d, count %d, "
-      "recv from %d (%d), recv_tag %d, count %d", 
+      "recv from %d (%d), recv_tag %d, count %d",
       i,
       global_rank,
       global_comm->mpi_rank,
