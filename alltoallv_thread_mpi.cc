@@ -83,6 +83,7 @@ int alltoallvMPI(const void* sendbuf,
       recv_tag,
       rcount);
 #endif
+#if 0
     if (scount == 0 && rcount != 0) {
       CHECK_MPI(MPI_Recv(dst,
                          rcount,
@@ -112,6 +113,20 @@ int alltoallvMPI(const void* sendbuf,
                             global_comm->comm,
                             &status));
     }
+#else
+    CHECK_MPI(MPI_Sendrecv(src,
+                            scount,
+                            mpi_type,
+                            sendto_mpi_rank,
+                            send_tag,
+                            dst,
+                            rcount,
+                            mpi_type,
+                            recvfrom_mpi_rank,
+                            recv_tag,
+                            global_comm->comm,
+                            &status));
+#endif
   }
 
   return CollSuccess;
