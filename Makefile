@@ -1,5 +1,5 @@
 DEBUG		?= 0
-COLL_NETWORKS	?= mpi
+COLL_NETWORKS	?= local
 
 ifeq ($(strip $(COLL_NETWORKS)),mpi)
 CXX			= mpicxx
@@ -63,12 +63,14 @@ COLL_SRC	+= alltoall_thread_mpi.cc \
 						 alltoallv_thread_mpi.cc \
 						 gather_thread_mpi.cc \
 						 allgather_thread_mpi.cc \
-						 bcast_thread_mpi.cc
+						 bcast_thread_mpi.cc \
+						 p2p_thread_mpi.cc
 endif
 ifeq ($(strip $(COLL_NETWORKS)),local)
 COLL_SRC	+= alltoall_thread_local.cc \
 						 alltoallv_thread_local.cc \
-						 allgather_thread_local.cc
+						 allgather_thread_local.cc \
+						 p2p_thread_local.cc
 endif
 
 COLL_OBJS	:= $(COLL_SRC:.cc=.cc.o)
@@ -84,16 +86,19 @@ COLL_TEST_SRC	+= alltoall_test.cc \
 								 alltoallv_con_test.cc \
 								 alltoallv_con_test2.cc \
 								 alltoallv_inplace_test.cc \
-								 comm_test.cc
+								 comm_test.cc \
+								 alltoallv_test0.cc \
+								 p2p_test.cc \
+								 pingpong_test.cc 
 
 COLL_TEST_OBJS	:= $(COLL_TEST_SRC:.cc=.cc.o)
 
 .PHONY: build clean
 
 ifeq ($(strip $(COLL_NETWORKS)),mpi)
-OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test
+OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test alltoallv_test0 p2p_test pingpong_test
 else
-OUTFILE := alltoall_test allgather_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test
+OUTFILE := alltoall_test allgather_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test alltoallv_test0 p2p_test pingpong_test
 endif
 
 
@@ -148,6 +153,15 @@ alltoallv_con_test2: $(SLIB_COLL) alltoallv_con_test2.cc.o
 
 alltoallv_inplace_test: $(SLIB_COLL) alltoallv_inplace_test.cc.o
 	$(CXX) -o $@ alltoallv_inplace_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
+
+alltoallv_test0: $(SLIB_COLL) alltoallv_test0.cc.o
+	$(CXX) -o $@ alltoallv_test0.cc.o $(CC_FLAGS) $(COLL_LIBS)
+
+p2p_test: $(SLIB_COLL) p2p_test.cc.o
+	$(CXX) -o $@ p2p_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
+
+pingpong_test: $(SLIB_COLL) pingpong_test.cc.o
+	$(CXX) -o $@ pingpong_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 # alltoall_thread2: alltoall_thread2.o
 # 	$(CC) -o $@ $^ $(CC_FLAGS) $(LD_FLAGS)

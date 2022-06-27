@@ -3,9 +3,12 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <pthread.h>
- #include <sys/time.h>
+#include <unistd.h>
 
+#include "realm.h"
 #include "coll.h"
+
+using namespace Realm;
 
 using namespace legate::comm::coll;
 
@@ -26,10 +29,12 @@ typedef struct thread_args_s {
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm comm;
 #endif
-  void *buf;
-  int count; 
-  CollDataType type;
-  int root;
+  void *sendbuf;
+  int sendcount; 
+  CollDataType sendtype;
+  void *recvbuf;
+  int recvcount;
+  CollDataType recvtype;
   int uid;
 } thread_args_t;
 
@@ -41,14 +46,35 @@ void *thread_func(void *thread_args)
   int global_rank = args->mpi_rank * args->nb_threads + args->tid;
   int global_comm_size = args->mpi_comm_size * args->nb_threads;
 
+ #if defined (LEGATE_USE_GASNET)
   int *mapping_table = (int *)malloc(sizeof(int) * global_comm_size);
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
   }
   collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, mapping_table);
+#else
+  collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, NULL);
+#endif
 
-  bcastMPI(args->buf, args->count, args->type, 
-            args->root, &global_comm);
+  for (int i = 0; i < 1; i++) {
+  collAllgather(args->sendbuf,
+                args->recvbuf, args->recvcount, args->recvtype,
+                &global_comm);
+  }
+
+  int p2pbuf = global_rank;
+  for (int i = 0; i < 10; i++) {
+    if (global_rank == 0) {
+      for (int i = 1; i < global_comm_size; i++) {
+        p2pbuf = 0;
+        collRecv(&p2pbuf, 1, CollDataType::CollInt, i, i, &global_comm);
+        assert(p2pbuf == i);
+      }
+    } else {
+      collSend(&p2pbuf, 1, CollDataType::CollInt, 0, global_rank, &global_comm);
+    }
+  }
+  collCommDestroy(&global_comm);
   return NULL;
 }
  
@@ -65,54 +91,52 @@ int main( int argc, char *argv[] )
 
   collInit(argc, argv);
 
+  Runtime rt;
+
+  rt.init(&argc, &argv);
+
 #if defined (LEGATE_USE_GASNET)
   MPI_Comm  mpi_comm;  
   MPI_Comm_dup(MPI_COMM_WORLD, &mpi_comm);
   MPI_Comm_rank(mpi_comm, &mpi_rank);
   MPI_Comm_size(mpi_comm, &mpi_comm_size);
+  // pid_t pid = getpid();
+  // printf("rank %d, pid %ld\n", mpi_rank, pid);
+  // sleep(10);
 #endif
 
-  size_t N = SEND_COUNT;
+  size_t N = mpi_comm_size * SEND_COUNT * NTHREADS;
 
-  DTYPE **buffs;
-  DTYPE *a;
+  DTYPE **send_buffs, **recv_buffs;
+  DTYPE *a, *b;
 
-  buffs = (DTYPE**)malloc(sizeof(DTYPE*) * NTHREADS);
-
-  int root = 5;
+  send_buffs = (DTYPE**)malloc(sizeof(DTYPE*) * NTHREADS);
+  recv_buffs = (DTYPE**)malloc(sizeof(DTYPE*) * NTHREADS);
 
   for (int i = 0; i < NTHREADS; i++) {
-    a = (DTYPE *)malloc(N*sizeof(DTYPE));
+    a = (DTYPE *)malloc(SEND_COUNT*sizeof(DTYPE));
+	  b = (DTYPE *)malloc(N*sizeof(DTYPE));
  
-    // printf("N %ld, rank=%d, tid %d, a=", N, mpi_rank, i);
+    printf("N %ld, rank=%d, tid %d, a=", N, mpi_rank, i);
 
     global_rank = mpi_rank * NTHREADS + i;
-    for(int j = 0; j < N; j++)
+    for(int j = 0; j < SEND_COUNT; j++)
     {
-      if (global_rank == root) {
-        a[j] = (DTYPE)j;
-      } else {
-        a[j] = (DTYPE)0;
-      }
+      a[j] = (DTYPE)(global_rank * SEND_COUNT + j);
+      b[j] = (DTYPE)0;
       // printf(" %d", a[j]);		
     }
 
-    // printf("\n");
+    printf("\n");
  
-    buffs[i] = a;
+    send_buffs[i] = a;
+    recv_buffs[i] = b;
   }
  
  #if defined (LEGATE_USE_GASNET)
   MPI_Barrier(mpi_comm);
 #endif
-
-  struct timeval tv;
-  gettimeofday(&tv,NULL);
-  unsigned long start_time = 1000000 * tv.tv_sec + tv.tv_usec;
   int uid = collInitComm();
-  gettimeofday(&tv,NULL);
-  unsigned long end_time = 1000000 * tv.tv_sec + tv.tv_usec;
-  printf("time %ld\n", end_time-start_time);
 
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
@@ -127,10 +151,12 @@ int main( int argc, char *argv[] )
  #if defined (LEGATE_USE_GASNET)
     args[i].comm = mpi_comm;
   #endif
-    args[i].buf = buffs[i];
-    args[i].count = SEND_COUNT;
-    args[i].type = COLL_DTYPE;
-    args[i].root = root;
+    args[i].sendbuf = send_buffs[i];
+    args[i].sendcount = SEND_COUNT;
+    args[i].sendtype = COLL_DTYPE;
+    args[i].recvbuf = recv_buffs[i];
+    args[i].recvcount = SEND_COUNT;
+    args[i].recvtype = COLL_DTYPE;
     args[i].uid = uid;
     pthread_create(&thread_id[i], NULL, thread_func, (void *)&(args[i]));
     //thread_func((void *)&(args[i]));
@@ -146,32 +172,33 @@ int main( int argc, char *argv[] )
 #endif
 
   for (int i = 0; i < NTHREADS; i++) {
-    a = buffs[i];
+    a = send_buffs[i];
+    b = recv_buffs[i];
     global_rank = mpi_rank * NTHREADS + i;
 
-    if (global_rank != root) {
-      // printf("rank=%d, tid %d, b=", mpi_rank, i);
-      // for(int j = 0; j < N; j++)
-      // {
-      //   printf(" %d", (int)a[j]);		
-      // }
-      // printf("\n");
+    // printf("rank=%d, tid %d, b=", mpi_rank, i);
+    // for(int j = 0; j < N; j++)
+    // {
+    //   printf(" %d", (int)b[j]);		
+    // }
+    // printf("\n");
 
-      for (int x = 0; x < N; x ++) {
-        if (a[x] != (DTYPE)x) {
-          printf("x %d val %d\n", x, (int)a[x]);
-          assert(0);
-        }
+    for (int x = 0; x < N; x ++) {
+      if (b[x] != (DTYPE)x) {
+        printf("x %d val %d\n", x, (int)b[x]);
+        assert(0);
       }
-
-      printf("rank %d, tid %d, SUCCESS\n", mpi_rank, i);
     }
 
+    printf("rank %d, tid %d, SUCCESS\n", mpi_rank, i);
+
     free(a);
+    free(b);  
   }
 
-  free(buffs);
- 
+  free(send_buffs);
+  free(recv_buffs);
+
   collFinalize();
 
 #if defined (LEGATE_USE_GASNET)

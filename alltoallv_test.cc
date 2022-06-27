@@ -12,7 +12,6 @@ using namespace Realm;
 using namespace legate::comm::coll;
 
 #define NTHREADS 16
-#define SEND_COUNT 80
 #define COLL_DTYPE CollDataType::CollInt64
 typedef long DTYPE;
 
