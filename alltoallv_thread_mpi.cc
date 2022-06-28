@@ -83,7 +83,7 @@ int alltoallvMPI(const void* sendbuf,
       recv_tag,
       rcount);
 #endif
-#if 1
+#if 0
     if (scount == 0 && rcount != 0) {
       CHECK_MPI(MPI_Recv(dst,
                          rcount,
