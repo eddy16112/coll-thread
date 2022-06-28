@@ -1,5 +1,5 @@
 DEBUG		?= 0
-COLL_NETWORKS	?= local
+COLL_NETWORKS	?= mpi
 
 ifeq ($(strip $(COLL_NETWORKS)),mpi)
 CXX			= mpicxx
@@ -96,9 +96,9 @@ COLL_TEST_OBJS	:= $(COLL_TEST_SRC:.cc=.cc.o)
 .PHONY: build clean
 
 ifeq ($(strip $(COLL_NETWORKS)),mpi)
-OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test alltoallv_test0 p2p_test pingpong_test
+OUTFILE := alltoall_test gather_test allgather_test bcast_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test p2p_test pingpong_test
 else
-OUTFILE := alltoall_test allgather_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test alltoallv_test0 p2p_test pingpong_test
+OUTFILE := alltoall_test allgather_test alltoall_fake_sub_test alltoallv_test myalltoallv_test alltoallv_con_test alltoallv_con_test2 alltoallv_inplace_test p2p_test pingpong_test
 endif
 
 
@@ -153,9 +153,6 @@ alltoallv_con_test2: $(SLIB_COLL) alltoallv_con_test2.cc.o
 
 alltoallv_inplace_test: $(SLIB_COLL) alltoallv_inplace_test.cc.o
 	$(CXX) -o $@ alltoallv_inplace_test.cc.o $(CC_FLAGS) $(COLL_LIBS)
-
-alltoallv_test0: $(SLIB_COLL) alltoallv_test0.cc.o
-	$(CXX) -o $@ alltoallv_test0.cc.o $(CC_FLAGS) $(COLL_LIBS)
 
 p2p_test: $(SLIB_COLL) p2p_test.cc.o
 	$(CXX) -o $@ p2p_test.cc.o $(CC_FLAGS) $(COLL_LIBS)

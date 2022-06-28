@@ -12,7 +12,7 @@ using namespace Realm;
 
 using namespace legate::comm::coll;
 
-#define NTHREADS 2
+#define NTHREADS 4
 #define SEND_COUNT 8
 #define COLL_DTYPE CollDataType::CollInt
 typedef int DTYPE;
@@ -52,16 +52,16 @@ void *pingpong_func(void *thread_args)
 
   int p2pbuf = 0;
   for (int i = 0; i < 10; i++) {
-    if (global_rank == 0) {
-      collSend(&p2pbuf, 1, CollDataType::CollInt, 1, 0, &global_comm);
-      collRecv(&p2pbuf, 1, CollDataType::CollInt, 1, 1, &global_comm);
+    if (global_rank % 2 == 0) {
+      collSend(&p2pbuf, 1, CollDataType::CollInt, global_rank+1, global_rank, &global_comm);
+      collRecv(&p2pbuf, 1, CollDataType::CollInt, global_rank+1, global_rank+1, &global_comm);
     } else {
-      collRecv(&p2pbuf, 1, CollDataType::CollInt, 0, 0, &global_comm);
+      collRecv(&p2pbuf, 1, CollDataType::CollInt, global_rank-1, global_rank-1, &global_comm);
       p2pbuf ++;
-      collSend(&p2pbuf, 1, CollDataType::CollInt, 0, 1, &global_comm);
+      collSend(&p2pbuf, 1, CollDataType::CollInt, global_rank-1, global_rank, &global_comm);
     }
   }
-  printf("buffer %d\n", p2pbuf);
+  printf("global rank %d, buffer %d\n", global_rank, p2pbuf);
   assert(p2pbuf == 10);
   collCommDestroy(&global_comm);
   return NULL;
@@ -87,16 +87,16 @@ void *pingping_func(void *thread_args)
 
   int p2pbuf[10];
   for (int i = 0; i < 10; i++) {
-    if (global_rank == 0) {
+    if (global_rank % 2 == 0) {
       p2pbuf[i] = i;
-      collSend(&(p2pbuf[i]), 1, CollDataType::CollInt, 1, 0, &global_comm);
+      collSend(&(p2pbuf[i]), 1, CollDataType::CollInt, global_rank+1, global_rank, &global_comm);
     } else {
-      collRecv(&(p2pbuf[i]), 1, CollDataType::CollInt, 0, 0, &global_comm);
+      collRecv(&(p2pbuf[i]), 1, CollDataType::CollInt, global_rank-1, global_rank-1, &global_comm);
     }
   }
   
   for (int i = 0; i < 10; i++) {
-    if (global_rank != 0) {
+    if (global_rank % 2 != 0) {
       assert(p2pbuf[i] == i);
     }
   }
