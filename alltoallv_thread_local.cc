@@ -55,6 +55,9 @@ int alltoallvLocal(const void* sendbuf,
   const int* displs    = nullptr;
   for (int i = 1; i < total_size + 1; i++) {
     recvfrom_global_rank = (global_rank + total_size - i) % total_size;
+    if (recvcounts[recvfrom_global_rank] == 0) {
+      continue;
+    }
     // wait for other threads to update the buffer address
     while (global_comm->comm->buffers[recvfrom_global_rank] == nullptr ||
            global_comm->comm->displs[recvfrom_global_rank] == nullptr)
@@ -82,9 +85,7 @@ int alltoallvLocal(const void* sendbuf,
       rdispls[recvfrom_global_rank],
       dst);
 #endif
-    if (recvcounts[recvfrom_global_rank] != 0) {
-      memcpy(dst, src, recvcounts[recvfrom_global_rank] * type_extent);
-    }
+    memcpy(dst, src, recvcounts[recvfrom_global_rank] * type_extent);
   }
 
   barrierLocal(global_comm);
