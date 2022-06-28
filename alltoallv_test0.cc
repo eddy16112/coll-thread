@@ -11,7 +11,7 @@ using namespace Realm;
 
 using namespace legate::comm::coll;
 
-#define NTHREADS 16
+#define NTHREADS 8
 #define COLL_DTYPE CollDataType::CollInt64
 typedef long DTYPE;
 
@@ -75,26 +75,51 @@ void *thread_func(void *thread_args)
   for (int i = 0; i < global_comm_size; i++) {
     sdispls[i] = soffset;
     soffset += i+1;
-    sendcount[i] = i + 1;
+    if (i % 2 == 0) {
+      sendcount[i] = 0;
+    } else {
+      sendcount[i] = i + 1;
+    }
   }
 
-  if (global_rank == 0) {
-    for (int i = 0; i < global_comm_size; i++) {
-      printf("%d ", sdispls[i]);
-    }
-    printf("\n");
-  }
+  // if (global_rank == 0) {
+  //   for (int i = 0; i < global_comm_size; i++) {
+  //     printf("%d ", sdispls[i]);
+  //   }
+  //   printf("\n");
+  // }
 
   int seg_size = global_rank + 1;
+  if (global_rank % 2 == 0) {
+    seg_size = 0;
+  }
   recvbuf = (DTYPE *)malloc(sizeof(DTYPE) * seg_size * global_comm_size);
   for (int i = 0; i < global_comm_size; i++) {
     recvcount[i] = seg_size;
     rdispls[i] = i * seg_size;
   }
 
-  // test inplace
   for (int i = 0; i < seg_size * global_comm_size; i++) {
-    recvbuf[i] = global_rank;
+    recvbuf[i] = 0;
+  }
+
+  if (global_rank == 2) {
+    for (int i = 0; i < seg_size * global_comm_size; i++) {
+      printf("%d ", recvbuf[i]);
+    }
+    printf("\n");
+    for (int i = 0; i < total_size; i++) {
+      printf("%d ", sendbuf[i]);
+    }
+    printf("\n");
+    for (int i = 0; i < global_comm_size; i++) {
+      printf("%d ", sendcount[i]);
+    }
+    printf("\n");
+    for (int i = 0; i < global_comm_size; i++) {
+      printf("%d ", recvcount[i]);
+    }
+    printf("\n");
   }
 
   // Coll_Alltoallv(recvbuf, sendcount,
@@ -104,12 +129,12 @@ void *thread_func(void *thread_args)
   //           &global_comm);
 
   collAlltoallv(sendbuf, sendcount,
-                sdispls, COLL_DTYPE,
+                sdispls,
                 recvbuf, recvcount,
                 rdispls, COLL_DTYPE, 
                 &global_comm);
-  
-  if (global_rank == 0) {
+
+  if (global_rank == 3) {
     for (int i = 0; i < seg_size * global_comm_size; i++) {
       printf("%d ", recvbuf[i]);
     }
@@ -140,7 +165,7 @@ void *thread_func(void *thread_args)
   // calculate recv size
   int total_size = 0;
   for (int i = 0; i < global_comm_size; i++) {
-    total_size += (i+1);
+    total_size += recvcount[i];
   }
 
  #ifndef INPLACE
