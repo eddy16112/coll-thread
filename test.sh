@@ -1,6 +1,5 @@
 set -e
 set -x
-mpirun -np 16 ./p2p_test
 mpirun -np 16 ./bcast_test
 mpirun -np 16 ./gather_test
 mpirun -np 16 ./alltoall_test
