@@ -38,11 +38,13 @@ typedef struct thread_args_s {
   int uid;
 } thread_args_t;
 
+CollComm global_comms[NTHREADS];
+
 void *thread_func(void *thread_args)
 {
   thread_args_t *args = (thread_args_t*)thread_args;
 
-  Coll_Comm global_comm;
+  Coll_Comm *global_comm = (Coll_Comm *)malloc(sizeof(Coll_Comm));
   int global_rank = args->mpi_rank * args->nb_threads + args->tid;
   int global_comm_size = args->mpi_comm_size * args->nb_threads;
 
@@ -51,17 +53,31 @@ void *thread_func(void *thread_args)
   for (int i = 0; i < global_comm_size; i++) {
     mapping_table[i] = i / args->nb_threads;
   }
-  collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, mapping_table);
+  collCommCreate(global_comm, global_comm_size, global_rank, args->uid, mapping_table);
 #else
-  collCommCreate(&global_comm, global_comm_size, global_rank, args->uid, NULL);
+  collCommCreate(global_comm, global_comm_size, global_rank, args->uid, NULL);
 #endif
+  global_comms[args->tid] = global_comm;
 
-  for (int i = 0; i < 10; i++) {
+  // for (int i = 0; i < 10; i++) {
+  // collAllgather(args->sendbuf,
+  //               args->recvbuf, args->recvcount, args->recvtype,
+  //               &global_comm);
+  // }
+  // collCommDestroy(&global_comm);
+  return NULL;
+}
+
+void *thread_func2(void *thread_args)
+{
+  thread_args_t *args = (thread_args_t*)thread_args;
+
+  for (int i = 0; i < 1; i++) {
   collAllgather(args->sendbuf,
                 args->recvbuf, args->recvcount, args->recvtype,
-                &global_comm);
+                global_comms[args->tid]);
   }
-  collCommDestroy(&global_comm);
+  collCommDestroy(global_comms[args->tid]);
   return NULL;
 }
  
@@ -128,7 +144,6 @@ int main( int argc, char *argv[] )
   pthread_t thread_id[NTHREADS];
   thread_args_t args[NTHREADS];
 
-  pthread_barrier_init(&barrier, NULL, NTHREADS);
 
   for (int i = 0; i < NTHREADS; i++) {
     args[i].mpi_rank = mpi_rank;
@@ -152,7 +167,31 @@ int main( int argc, char *argv[] )
   for(int i = 0; i < NTHREADS; i++) {
       pthread_join( thread_id[i], NULL); 
   }
-  pthread_barrier_destroy(&barrier);
+
+  collInitComm();
+
+  for (int i = 0; i < NTHREADS; i++) {
+    args[i].mpi_rank = mpi_rank;
+    args[i].mpi_comm_size = mpi_comm_size;
+    args[i].tid = i;
+    args[i].nb_threads = NTHREADS;
+ #if defined (LEGATE_USE_GASNET)
+    args[i].comm = mpi_comm;
+  #endif
+    args[i].sendbuf = send_buffs[i];
+    args[i].sendcount = SEND_COUNT;
+    args[i].sendtype = COLL_DTYPE;
+    args[i].recvbuf = recv_buffs[i];
+    args[i].recvcount = SEND_COUNT;
+    args[i].recvtype = COLL_DTYPE;
+    args[i].uid = uid;
+    pthread_create(&thread_id[i], NULL, thread_func2, (void *)&(args[i]));
+    //thread_func((void *)&(args[i]));
+  }
+
+  for(int i = 0; i < NTHREADS; i++) {
+      pthread_join( thread_id[i], NULL); 
+  }
 
  #if defined (LEGATE_USE_GASNET)
 	MPI_Barrier(mpi_comm);
@@ -170,12 +209,12 @@ int main( int argc, char *argv[] )
     // }
     // printf("\n");
 
-    for (int x = 0; x < N; x ++) {
-      if (b[x] != (DTYPE)x) {
-        printf("x %d val %d\n", x, (int)b[x]);
-        assert(0);
-      }
-    }
+    // for (int x = 0; x < N; x ++) {
+    //   if (b[x] != (DTYPE)x) {
+    //     printf("x %d val %d\n", x, (int)b[x]);
+    //     assert(0);
+    //   }
+    // }
 
     printf("rank %d, tid %d, SUCCESS\n", mpi_rank, i);
 
