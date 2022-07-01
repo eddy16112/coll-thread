@@ -30,65 +30,44 @@ namespace coll {
 using namespace Legion;
 extern Logger log_coll;
 
-int sendMPI(const void *sendbuf, 
-            int count, 
-            CollDataType type, 
-            int dest, 
-            int tag, 
-            CollComm global_comm)
+int sendMPI(
+  const void* sendbuf, int count, CollDataType type, int dest, int tag, CollComm global_comm)
 {
   MPI_Datatype mpi_type = dtypeToMPIDtype(type);
 
   int dest_mpi_rank = global_comm->mapping_table.mpi_rank[dest];
-  int send_tag = generateP2PTag(tag);
+  int send_tag      = generateP2PTag(tag);
 #ifdef DEBUG_LEGATE
-  log_coll.debug(
-      "sendMPI global_rank %d, mpi rank %d, send to %d (%d), send_tag %d",
-      global_comm->global_rank,
-      global_comm->mpi_rank,
-      dest,
-      dest_mpi_rank,
-      send_tag);
+  log_coll.debug("sendMPI global_rank %d, mpi rank %d, send to %d (%d), send_tag %d",
+                 global_comm->global_rank,
+                 global_comm->mpi_rank,
+                 dest,
+                 dest_mpi_rank,
+                 send_tag);
 #endif
-    CHECK_MPI(MPI_Send(sendbuf,
-                       count,
-                       mpi_type,
-                       dest_mpi_rank,
-                       send_tag,
-                       global_comm->comm));
+  CHECK_MPI(MPI_Send(sendbuf, count, mpi_type, dest_mpi_rank, send_tag, global_comm->comm));
 
   return CollSuccess;
 }
 
-int recvMPI(void *recvbuf, 
-            int count, 
-            CollDataType type, 
-            int source, 
-            int tag, 
-            CollComm global_comm)
+int recvMPI(void* recvbuf, int count, CollDataType type, int source, int tag, CollComm global_comm)
 {
   MPI_Status status;
-  
+
   MPI_Datatype mpi_type = dtypeToMPIDtype(type);
 
   int source_mpi_rank = global_comm->mapping_table.mpi_rank[source];
-  int recv_tag = generateP2PTag(tag);
+  int recv_tag        = generateP2PTag(tag);
 #ifdef DEBUG_LEGATE
-  log_coll.debug(
-      "recvMPI global_rank %d, mpi rank %d, recv from %d (%d), recv_tag %d",
-      global_comm->global_rank,
-      global_comm->mpi_rank,
-      source,
-      source_mpi_rank,
-      recv_tag);
+  log_coll.debug("recvMPI global_rank %d, mpi rank %d, recv from %d (%d), recv_tag %d",
+                 global_comm->global_rank,
+                 global_comm->mpi_rank,
+                 source,
+                 source_mpi_rank,
+                 recv_tag);
 #endif
-    CHECK_MPI(MPI_Recv(recvbuf,
-                       count,
-                       mpi_type,
-                       source_mpi_rank,
-                       recv_tag,
-                       global_comm->comm,
-                       &status));
+  CHECK_MPI(
+    MPI_Recv(recvbuf, count, mpi_type, source_mpi_rank, recv_tag, global_comm->comm, &status));
 
   return CollSuccess;
 }
