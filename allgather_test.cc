@@ -209,12 +209,12 @@ int main( int argc, char *argv[] )
     // }
     // printf("\n");
 
-    // for (int x = 0; x < N; x ++) {
-    //   if (b[x] != (DTYPE)x) {
-    //     printf("x %d val %d\n", x, (int)b[x]);
-    //     assert(0);
-    //   }
-    // }
+    for (int x = 0; x < N; x ++) {
+      if (b[x] != (DTYPE)x) {
+        printf("x %d val %d\n", x, (int)b[x]);
+        assert(0);
+      }
+    }
 
     printf("rank %d, tid %d, SUCCESS\n", mpi_rank, i);
 
