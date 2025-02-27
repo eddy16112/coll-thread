@@ -130,8 +130,11 @@ pmix_status_t pmix_allgather(const void *sendbuf, void *recvbuf, int length,
   printf("Put done, Rank %d mpi_rank %d tid %d put key %s\n", comm.rank, comm.mpi_rank, comm.tid, key);
 
   pthread_barrier_wait(&barrier);
-  status = pmix_exchange();
-  assert(status == PMIX_SUCCESS);
+  if (comm.tid == 0) {
+    status = pmix_exchange();
+    assert(status == PMIX_SUCCESS);
+  }
+  pthread_barrier_wait(&barrier);
   for (int i = 0; i < comm.mpi_comm_size; i++) {
     for (int j = 0; j < comm.nb_threads; j++) {
       char remote_key[BOOTSTRAP_PMIX_KEYSIZE];
