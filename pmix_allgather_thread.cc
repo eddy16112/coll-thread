@@ -18,7 +18,7 @@ struct PMIX_Comm {
 
 static pmix_proc_t myproc;
 
-#define NTHREADS 1
+#define NTHREADS 2
 
 struct thread_args_t {
   int mpi_comm_size;
@@ -91,11 +91,14 @@ static pmix_status_t pmix_get(PMIX_Comm &comm, int pe, const char *key, void *va
   assert(status == PMIX_SUCCESS);
 
   if (val == NULL) {
+    printf("Get failed: Rank %d mpi_rank %d tid %d pe %d key %s, nspace %s, val is NULL\n", comm.rank, comm.mpi_rank, comm.tid, pe, key, comm.proc.nspace);
+    assert(0);
     goto out;
   }
 
   /* see if the data fits into the given region */
   if (valuelen < val->data.bo.size) {
+    assert(0);
     status = PMIX_ERROR;
     goto rel_val;
   }
@@ -124,6 +127,7 @@ pmix_status_t pmix_allgather(const void *sendbuf, void *recvbuf, int length,
 
   status = pmix_put(key, sendbuf, length);
   assert(status == PMIX_SUCCESS);
+  printf("Put done, Rank %d mpi_rank %d tid %d put key %s\n", comm.rank, comm.mpi_rank, comm.tid, key);
 
   pthread_barrier_wait(&barrier);
   status = pmix_exchange();
@@ -133,7 +137,7 @@ pmix_status_t pmix_allgather(const void *sendbuf, void *recvbuf, int length,
       char remote_key[BOOTSTRAP_PMIX_KEYSIZE];
       snprintf(remote_key, BOOTSTRAP_PMIX_KEYSIZE, "BOOTSTRAP-ALLGATHER-%04x", j);
       int remote_rank = i * comm.nb_threads + j;
-      //printf("Rank %d mpi_rank %d tid %d remote_rank %d\n", comm.rank, comm.mpi_rank, comm.tid, remote_rank);
+      //printf("Rank %d mpi_rank %d tid %d remote_rank %d, remote_key %s\n", comm.rank, comm.mpi_rank, comm.tid, remote_rank, remote_key);
       status = pmix_get(comm,i, remote_key, (char *)recvbuf + length * remote_rank, length);
       assert(status == PMIX_SUCCESS);
     }
@@ -153,6 +157,7 @@ void *thread_func(void *thread_args)
   comm.nb_threads = args->nb_threads;
   comm.rank = comm.mpi_rank * comm.nb_threads + comm.tid;
   comm.comm_size = comm.mpi_comm_size * comm.nb_threads;
+  comm.proc = myproc;
 
   const int N = 5;
   std::vector<int> sendbuf(N, comm.rank);
@@ -177,15 +182,14 @@ void *thread_func(void *thread_args)
 
 int main(int argc, char **argv) {
   
-  printf("pid %d\n", getpid());
-  // sleep(10);
   pmix_info_t *info;
   PMIX_INFO_CREATE(info, 1);
   PMIX_INFO_LOAD(&info[0], PMIX_THREADING_MODEL, "pthread", PMIX_STRING);
 
   PMIX_PROC_CONSTRUCT(&myproc);
 
-  PMIx_Init(&myproc, info, 1);
+  pmix_status_t status = PMIx_Init(&myproc, info, 1);
+  assert(status == PMIX_SUCCESS);
 
   int mpi_rank = myproc.rank;
 
@@ -193,9 +197,10 @@ int main(int argc, char **argv) {
   PMIX_LOAD_NSPACE(proc.nspace, proc.nspace);
   proc.rank = PMIX_RANK_WILDCARD;
   pmix_value_t *val;
-  PMIx_Get(&proc, PMIX_JOB_SIZE, NULL, 0, &val);
+  status = PMIx_Get(&proc, PMIX_JOB_SIZE, NULL, 0, &val);
+  assert(status == PMIX_SUCCESS);
   int mpi_comm_size = val->data.uint32;
-  printf("Hello, world! I am rank %d of %d\n", mpi_rank, mpi_comm_size);
+  printf("Hello, world! I am rank %d of %d, pid %d\n", mpi_rank, mpi_comm_size, getpid());
 
 
   pthread_t thread_id[NTHREADS];
@@ -217,7 +222,10 @@ int main(int argc, char **argv) {
   }
   pthread_barrier_destroy(&barrier);
 
+  // status = PMIx_Fence(NULL, 0, NULL, 0);
+  // assert(status == PMIX_SUCCESS);
 
-  PMIx_Finalize(NULL, 0);
+  status = PMIx_Finalize(NULL, 0);
+  assert(status == PMIX_SUCCESS);
   return 0;
 }
